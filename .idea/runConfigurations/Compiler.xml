@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Compiler" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="compiler.Main" />
+    <module name="project-i" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
