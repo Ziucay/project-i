@@ -63,7 +63,6 @@ public class Lexer {
     private void scanToken() {
         char symbol = next();
         switch (symbol) {
-            //TODO Азат: нам нужен токен для символа ':'
             case '(':
                 addToken(LEFT_PAREN);
                 break;
@@ -100,6 +99,9 @@ public class Lexer {
             case ';':
                 addToken(SEMICOLON);
                 break;
+            case ':':
+                addToken(match('=') ? WALRUS : COLON);
+                break;
             case '.':
                 addToken(match('.') ? DOT_DOT : DOT);
                 break;
@@ -120,13 +122,6 @@ public class Lexer {
             case '\r':
             case '\t':
                 break;
-            /*
-            TODO: Азат: я думаю, нам всё же нужен токен для
-            переноса строки, так как этим мы разделяем операции
-            Пример:
-            var a : boolean var b : integer
-            Строка выже по описанию языка - неверная
-             */
             case '\n':
                 line++;
                 break;
