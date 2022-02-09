@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import static compiler.TokenType.*;
-class Lexer {
+public class Lexer {
     private static final Map <String, TokenType> keywords;
 
     static {
@@ -46,11 +46,11 @@ class Lexer {
     private int current = 0;
     private int line = 1;
 
-    Lexer(String source) {
+    public Lexer(String source) {
         this.source = source;
     }
 
-    List<Token> scanTokens() {
+    public List<Token> scanTokens() {
         while (!isAtEnd()) {
             start = current;
             scanToken();
@@ -63,6 +63,7 @@ class Lexer {
     private void scanToken() {
         char symbol = next();
         switch (symbol) {
+            //TODO Азат: нам нужен токен для символа ':'
             case '(':
                 addToken(LEFT_PAREN);
                 break;
@@ -119,7 +120,13 @@ class Lexer {
             case '\r':
             case '\t':
                 break;
-
+            /*
+            TODO: Азат: я думаю, нам всё же нужен токен для
+            переноса строки, так как этим мы разделяем операции
+            Пример:
+            var a : boolean var b : integer
+            Строка выже по описанию языка - неверная
+             */
             case '\n':
                 line++;
                 break;
@@ -235,8 +242,8 @@ class Lexer {
 
     public String toString() {
         String string = "";
-        for (int i = 0; i < this.tokens.size(); i++) {
-            string = this.tokens.get(i).toString() + '\n';
+        for (Token token : this.tokens) {
+            string = token.toString() + '\n';
         }
         return string;
     }
