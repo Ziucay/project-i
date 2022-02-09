@@ -1,10 +1,11 @@
+package compiler;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import TokenTypes.*;
-import Token;
 
+import static compiler.TokenType.*;
 class Lexer {
     private static final Map <String, TokenType> keywords;
 
@@ -100,9 +101,6 @@ class Lexer {
                 break;
             case '.':
                 addToken(match('.') ? DOT_DOT : DOT);
-                break;
-            case ':':
-                addToken(match('=') ? WALRUS : COLON);
                 break;
             case '=':
                 addToken(match('=') ? EQUAL_EQUAL : EQUAL);
@@ -233,5 +231,13 @@ class Lexer {
 
     private boolean isAlphaNumeric(char symbol) {
         return isAlpha(symbol) || isDigit(symbol);
+    }
+
+    public String toString() {
+        String string = "";
+        for (int i = 0; i < this.tokens.size(); i++) {
+            string = this.tokens.get(i).toString() + '\n';
+        }
+        return string;
     }
 }
