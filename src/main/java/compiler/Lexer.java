@@ -140,7 +140,7 @@ public class Lexer {
     }
 
     private void identifier() {
-        while (isAlphaNumeric(peek()))
+        while (isAlpha(peek()) || isDigit(peek()))
             next();
 
         String text = source.substring(start, current);
@@ -152,7 +152,7 @@ public class Lexer {
         while (isDigit(peek()))
             next();
 
-        if (peek() == '.' && isDigit(peekNext())) {
+        if (peek() == '.' && isDigit(peekAtNext(1))) {
             next();
 
             while (isDigit(peek()))
@@ -175,6 +175,32 @@ public class Lexer {
 
     private boolean isAtEnd() {
         return current >= source.length();
+    }
+
+    private boolean isAlpha(char symbol) {
+        return (symbol >= 'a' && symbol <= 'z') ||
+                (symbol >= 'A' && symbol <= 'Z') ||
+                (symbol == '_');
+    }
+
+    private boolean isDigit(char symbol) {
+        return symbol >= '0' && symbol <= '9';
+    }
+
+    private boolean isString(char symbol) {
+        return symbol == '\"';
+    }
+
+    private boolean notQuote(char symbol) {
+        return symbol != '\"';
+    }
+
+    public String toString() {
+        String string = "";
+        for (Token token : this.tokens) {
+            string = token.toString() + '\n';
+        }
+        return string;
     }
 
     private char next() {
@@ -207,39 +233,9 @@ public class Lexer {
         return source.charAt(current);
     }
 
-    private char peekNext() {
-        if (current + 1 >= source.length())
+    private char peekAtNext(int additional) {
+        if (current + additional >= source.length())
             return '\0';
-        return source.charAt(current + 1);
-    }
-
-    private boolean isAlpha(char symbol) {
-        return (symbol >= 'a' && symbol <= 'z') ||
-                (symbol >= 'A' && symbol <= 'Z') ||
-                (symbol == '_');
-    }
-
-    private boolean isDigit(char symbol) {
-        return symbol >= '0' && symbol <= '9';
-    }
-
-    private boolean isString(char symbol) {
-        return symbol == '\"';
-    }
-
-    private boolean notQuote(char symbol) {
-        return symbol != '\"';
-    }
-
-    private boolean isAlphaNumeric(char symbol) {
-        return isAlpha(symbol) || isDigit(symbol);
-    }
-
-    public String toString() {
-        String string = "";
-        for (Token token : this.tokens) {
-            string = token.toString() + '\n';
-        }
-        return string;
+        return source.charAt(current + additional);
     }
 }
