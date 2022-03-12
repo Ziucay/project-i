@@ -13,7 +13,7 @@ public class Main {
         Lexer lexer = new Lexer(source);
         List<Token> tokens = lexer.scanTokens();
         System.out.println(tokens);
-        Parser parser = new Parser(true);
+        Parser parser = new Parser(false);
         parser.setTokens(tokens);
         parser.yyparse();
     }
