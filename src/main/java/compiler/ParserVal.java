@@ -11,85 +11,52 @@ package compiler;
  */
 public class ParserVal {
 
-    enum ParserValType {
-        INT,
-        DOUBLE,
-        BOOL
-    }
-
     public ParserValType type;
 
-    /**
-     * integer value of this 'union'
-     */
     public Integer ival;
 
-    /**
-     * double value of this 'union'
-     */
     public Double dval;
 
-    /**
-     * string value of this 'union'
-     */
     public String sval;
 
-    /**
-     * object value of this 'union'
-     */
     public Object obj;
 
-    /**
-     * object value of this 'union'
-     */
     public Boolean bval;
 
-//#############################################
-//## C O N S T R U C T O R S
-//#############################################
-
-    /**
-     * Initialize me without a value
-     */
     public ParserVal() {
     }
 
-    /**
-     * Initialize me as an int
-     */
     public ParserVal(int val) {
         ival = val;
         type = ParserValType.INT;
     }
 
-    /**
-     * Initialize me as a double
-     */
     public ParserVal(double val) {
         dval = val;
         type = ParserValType.DOUBLE;
     }
 
-    /**
-     * Initialize me as a string
-     */
     public ParserVal(String val) {
         sval = val;
     }
 
-    /**
-     * Initialize me as an Object
-     */
     public ParserVal(Object val) {
         obj = val;
     }
 
-    /**
-     * Initialize me as an Object
-     */
     public ParserVal(Boolean val) {
         bval = val;
         type = ParserValType.BOOL;
+    }
+
+    public ParserVal(ParserValType val) {
+        type = val;
+        switch (val)
+        {
+            case BOOL -> bval = false;
+            case INT -> ival = 0;
+            case DOUBLE -> dval = 0.0;
+        }
     }
 
     public String toString() {

@@ -1,3 +1,9 @@
-var a is 5
-var b is 6
-a + b
+routine a () is
+var ab is 1
+var cd is 2
+end
+
+routine b (rew : real) is
+var abd is 12
+var cda is 21
+end
