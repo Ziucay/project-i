@@ -15,6 +15,6 @@ public class Main {
         System.out.println(tokens);
         Parser parser = new Parser(false);
         parser.setTokens(tokens);
-        parser.yyparse();
+        parser.run();
     }
 }

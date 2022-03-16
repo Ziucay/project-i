@@ -1,9 +1,5 @@
 routine a () is
-var ab is 1
-var cd is 2
+	var ab is 1 + 2
+	var cd is ab + 3
 end
 
-routine b (rew : real) is
-var abd is 12
-var cda is 21
-end
