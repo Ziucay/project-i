@@ -1,5 +1,3 @@
 routine a () is
-	var ab is 1 + 2
-	var cd is ab + 3
+	var test is 2 + + 3
 end
-

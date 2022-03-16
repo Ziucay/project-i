@@ -477,7 +477,7 @@ public class Parser {
     List<Token> tokens;
     int tokenPointer = 0;
     Node root = new Node("root", null, new LinkedList<>());
-
+    int line;
 
     void setTokens(List<Token> tokens) {
         this.tokens = tokens;
@@ -485,7 +485,7 @@ public class Parser {
     }
 
     private void yyerror(String syntax_error) {
-        System.out.println("Error: " + syntax_error);
+        System.out.println("Error: " + syntax_error + "\n" + "Line: " + line);
     }
 
     private int yylex() {
@@ -500,6 +500,7 @@ public class Parser {
             default -> this.yylval = new ParserVal(token.lexeme);
         }
         tokenPointer++;
+        line = tokens.get(tokenPointer - 1).line;
         return tokens.get(tokenPointer - 1).TokenTypeToInt();
     }
 
