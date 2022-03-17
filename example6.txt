@@ -1,0 +1,7 @@
+routine a () is
+	var a : integer is 11
+	while a < 13
+	loop
+	end
+end
+	

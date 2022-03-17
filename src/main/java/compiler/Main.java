@@ -21,15 +21,17 @@ public class Main {
         Parser parser = new Parser(false);
         parser.setTokens(tokens);
         parser.run();
-        JVMCompiler compiler = new JVMCompiler(new ArrayList<>(), filename);
-        compiler.traverseTree(parser.root);
-        System.out.println();
-        FileWriter writer = new FileWriter(filename + ".class");
-        for (String line:
-                compiler.code) {
-            writer.write(line + "\n");
+        JVMCompiler compiler = new JVMCompiler(parser.floatValues, filename);
+        if (parser.root.descendants.size() != 0) {
+            compiler.traverseTree(parser.root);
+            System.out.println();
+            FileWriter writer = new FileWriter(filename + ".class");
+            for (String line :
+                    compiler.code) {
+                writer.write(line + "\n");
+            }
+            writer.flush();
         }
-        writer.flush();
     }
 }
 

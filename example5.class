@@ -9,12 +9,20 @@ public class example5
 	descriptor: ()V
 	flags: ACC_PUBLIC
 	Code:
-		0: bipush 16
-		2: istore_1
-		3: ifgt 9
-		6: goto 12
-		9: iinc 1 -1
-		12: goto 3
-		15: bipush 1
-		17: istore_1
+		0: bipush 5
+		2: istore
+		3: bipush 16
+		5: istore_1
+		6: iload_1
+		7: bipush 11
+		9: if_icmpge 16
+		12: iconst_0
+		13: goto 17
+		16: iconst_1
+		17: ifgt 23
+		20: goto 26
+		23: iinc 1 -1
+		26: goto 6
+		29: bipush 1
+		31: istore_1
 }

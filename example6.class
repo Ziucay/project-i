@@ -1,0 +1,22 @@
+public class example6
+ minor version: 0
+ minor version: 55
+ flags: ACC_PUBLIC
+ this_class: #0
+ super_class: #0
+{
+ public void a();
+	descriptor: ()V
+	flags: ACC_PUBLIC
+	Code:
+		0: bipush 0
+		2: istore
+		3: iload_1
+		4: bipush 13
+		6: if_icmplt 13
+		9: iconst_0
+		10: goto 14
+		13: iconst_1
+		14: ifeq 20
+		17: goto 3
+}

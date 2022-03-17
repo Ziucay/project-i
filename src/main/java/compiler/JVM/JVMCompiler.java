@@ -4,6 +4,7 @@ import compiler.Node;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 public class JVMCompiler {
@@ -11,7 +12,7 @@ public class JVMCompiler {
     public ArrayList<String> code;
     String name;
 
-    public JVMCompiler(ArrayList<Float> constants, String name) {
+    public JVMCompiler(List<Float> constants, String name) {
         this.constantPool = new HashMap<>();
         this.code = new ArrayList<>();
         this.name = name;
@@ -159,7 +160,6 @@ public class JVMCompiler {
                 code.add(index.get(0), "\t\t" + offset.get(1) + ": ifeq " + frame.offset);
                 return "";
             case "for":
-                System.out.println(frame.table.variableEntries.get("a"));
                 Node range = node.descendants.get(1);
                 start = visitNode(range.descendants.get(0), frame);
                 identifier = visitNode(node.descendants.get(0), frame);
@@ -178,16 +178,14 @@ public class JVMCompiler {
                 frame.offset += JVMInstruction.instructionOffset("goto");
                 visitNode(node.descendants.get(2), frame);
                 if (Objects.equals(node.descendants.get(1).identifier, "range")) {
-                    code.addAll(frame.incrementPositive(identifier));
+                    code.addAll(frame.incrementPositive(node.descendants.get(0).identifier));
                 } else {
-                    code.addAll(frame.incrementNegative(identifier));
+                    code.addAll(frame.incrementNegative(node.descendants.get(0).identifier));
                 }
                 code.add("\t\t" + frame.offset + ": goto " + offset.get(0));
                 code.add(index.get(0), "\t\t" + offset.get(1) + ": goto " + frame.offset);
                 frame.offset += JVMInstruction.instructionOffset("goto");
                 return "";
-            case "modifiable":
-                return visitNode(node.descendants.get(0), frame);
             case "variable-declaration":
                 if (Objects.equals(node.descendants.get(1).identifier, "type-integer")) {
                     if (node.descendants.size() == 2) {
@@ -439,7 +437,6 @@ public class JVMCompiler {
     }
 
     String performMoreEqual (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
-        System.out.println(left + " " + right);
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
                 this.code.addAll(frame.moreEqualIntId(leftNode.identifier, rightNode.identifier));
@@ -739,7 +736,6 @@ public class JVMCompiler {
             if (Objects.equals(right, "intId")) {
                 this.code.addAll(frame.addIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-
                 this.code.addAll(frame.addIntIdValue(leftNode.identifier, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
                 this.code.addAll(frame.addIntStackId(true, leftNode.identifier));

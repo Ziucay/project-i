@@ -1,4 +1,4 @@
-public class program
+public class example2
  minor version: 0
  minor version: 55
  flags: ACC_PUBLIC
@@ -17,8 +17,8 @@ public class program
 		8: bipush 3
 		10: imul
 		11: istore
-		12: iload_2
-		13: iload_1
+		12: iload_1
+		13: iload_2
 		14: if_icmpge 21
 		17: iconst_0
 		18: goto 22
@@ -27,6 +27,6 @@ public class program
 		25: iload_1
 		26: istore_2
 		27: goto 32
-		30: iload_1
-		31: istore_2
+		30: iload_2
+		31: istore_1
 }

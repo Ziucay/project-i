@@ -89,7 +89,7 @@ public class JVMFrame {
     }
 
     ArrayList<String> incrementPositive(String identifier) {
-        int id = (int) this.varIds.get(identifier);
+        int id = this.varIds.get(identifier);
         ArrayList<String> result = new ArrayList<>();
 
         result.add("\t\t" + offset + ": iinc " + id + " " + 1);
@@ -98,7 +98,7 @@ public class JVMFrame {
     }
 
     ArrayList<String> incrementNegative(String identifier) {
-        int id = (int) this.varIds.get(identifier);
+        int id = this.varIds.get(identifier);
         ArrayList<String> result = new ArrayList<>();
 
         result.add("\t\t" + offset + ": iinc " + id + " " + -1);

@@ -13,4 +13,8 @@ public class example1
 		2: bipush 2
 		4: iadd
 		5: istore
+		6: iload_1
+		7: bipush 3
+		9: iadd
+		10: istore
 }

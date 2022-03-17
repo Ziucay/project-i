@@ -1,5 +1,5 @@
 routine a () is 
-	var a : integer
+	var a is 5
 	for a in reverse 16 .. 11 
 	loop
 	end
