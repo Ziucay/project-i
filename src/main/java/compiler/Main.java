@@ -18,6 +18,9 @@ public class Main {
         Lexer lexer = new Lexer(source);
         List<Token> tokens = lexer.scanTokens();
         System.out.println(tokens);
+        Parser parser = new Parser(false);
+        parser.setTokens(tokens);
+        parser.run();
         JVMCompiler compiler = new JVMCompiler(new ArrayList<>(), "program");
         ASTNode root = ASTNode.exampleTwo(new ASTNode("root"));
         compiler.traverseTree(root);
