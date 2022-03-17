@@ -477,7 +477,7 @@ public class Parser {
     List<Token> tokens;
     int tokenPointer = 0;
     Node root = new Node("root", null, new LinkedList<>());
-    int line;
+
 
     void setTokens(List<Token> tokens) {
         this.tokens = tokens;
@@ -485,7 +485,7 @@ public class Parser {
     }
 
     private void yyerror(String syntax_error) {
-        System.out.println("Error: " + syntax_error + "\n" + "Line: " + line);
+        System.out.println("Error: " + syntax_error);
     }
 
     private int yylex() {
@@ -500,7 +500,6 @@ public class Parser {
             default -> this.yylval = new ParserVal(token.lexeme);
         }
         tokenPointer++;
-        line = tokens.get(tokenPointer - 1).line;
         return tokens.get(tokenPointer - 1).TokenTypeToInt();
     }
 
@@ -990,25 +989,25 @@ public class Parser {
                 case 64:
 //#line 195 "yacc.y"
                 {
-                    yyval = new ParserVal(new Node(yylval.dval.toString(), Double.valueOf(val_peek(0).dval)));
+                    yyval = new ParserVal(new Node("realValue", Double.valueOf(val_peek(0).dval).floatValue()));
                 }
                 break;
                 case 65:
 //#line 196 "yacc.y"
                 {
-                    yyval = new ParserVal(new Node(yylval.ival.toString(), Integer.valueOf(val_peek(0).ival)));
+                    yyval = new ParserVal(new Node("intValue", Integer.valueOf(val_peek(0).ival)));
                 }
                 break;
                 case 66:
 //#line 197 "yacc.y"
                 {
-                    yyval = new ParserVal(new Node("true", Boolean.valueOf(true)));
+                    yyval = new ParserVal(new Node("boolValue", Boolean.valueOf(true)));
                 }
                 break;
                 case 67:
 //#line 198 "yacc.y"
                 {
-                    yyval = new ParserVal(new Node("false", Boolean.valueOf(false)));
+                    yyval = new ParserVal(new Node("boolValue", Boolean.valueOf(false)));
                 }
                 break;
                 case 68:
