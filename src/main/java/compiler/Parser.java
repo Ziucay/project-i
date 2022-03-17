@@ -474,7 +474,9 @@ public class Parser {
     //#line 206 "yacc.y"
     Stack<List<Node>> blockStack = new Stack<>();
 
+
     List<Token> tokens;
+    List<Float> floatValues = new ArrayList<>();
     int tokenPointer = 0;
     Node root = new Node("root", null, new LinkedList<>());
 
@@ -494,7 +496,10 @@ public class Parser {
         Token token = tokens.get(tokenPointer);
         switch (token.type) {
             case TYPE_INTEGER -> this.yylval = new ParserVal(Integer.valueOf(token.lexeme).intValue());
-            case TYPE_REAL -> this.yylval = new ParserVal(Double.valueOf(token.lexeme).doubleValue());
+            case TYPE_REAL ->  {
+                this.yylval = new ParserVal(Double.valueOf(token.lexeme).doubleValue());
+                floatValues.add(this.yylval.dval.floatValue());
+            }
             case TYPE_BOOLEAN -> this.yylval = new ParserVal(Boolean.valueOf(token.lexeme).booleanValue());
             case IDENTIFIER -> this.yylval = new ParserVal(token.lexeme);
             default -> this.yylval = new ParserVal(token.lexeme);
