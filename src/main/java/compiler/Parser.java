@@ -1018,7 +1018,7 @@ public class Parser {
                 case 68:
 //#line 199 "yacc.y"
                 {
-                    yyval = new ParserVal(new Node("modifiable", null, Arrays.asList(val_peek(0).obj)));
+                    yyval = val_peek(0);
                 }
                 break;
                 case 69:
