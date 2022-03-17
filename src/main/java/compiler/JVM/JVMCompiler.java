@@ -57,6 +57,8 @@ public class JVMCompiler {
 
     String visitNode (ASTNode node, JVMFrame frame) {
         String left, right;
+        ArrayList<Integer> offset = new ArrayList<>();
+        ArrayList<Integer> index = new ArrayList<>();
         switch (node.op) {
             case "+":
                 left = visitNode(node.childs.get(0), frame);
@@ -123,8 +125,6 @@ public class JVMCompiler {
                 return "";
             case "if":
                 visitNode(node.childs.get(0), frame);
-                ArrayList<Integer> offset = new ArrayList<>();
-                ArrayList<Integer> index = new ArrayList<>();
                 if (node.childs.size() == 2) {
                     offset.add(frame.offset);
                     code.add("\t\t" + frame.offset + ": ifgt " + frame.offset + JVMInstruction.instructionOffset("goto") + JVMInstruction.instructionOffset("if"));
@@ -145,6 +145,16 @@ public class JVMCompiler {
                     code.add(index.get(1), "\t\t" + offset.get(1) + ": goto " + frame.offset);
                 }
                 return "";
+            case "while":
+                offset.add(frame.offset);
+                visitNode(node.childs.get(0), frame);
+                index.add(this.code.size());
+                offset.add(frame.offset);
+                frame.offset += JVMInstruction.instructionOffset("if");
+                visitNode(node.childs.get(1), frame);
+                code.add(frame.offset + ": goto " + offset.get(0));
+                frame.offset += JVMInstruction.instructionOffset("goto");
+                code.add(index.get(0), offset.get(1) + ": ifeq " + frame.offset);
             default:
                 if (Objects.equals(frame.table.variableEntries.get(node.op), "boolean")) {
                     return "boolId";
