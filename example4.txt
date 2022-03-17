@@ -1,0 +1,3 @@
+routine a () is 
+	var test is 2 + + 3
+end

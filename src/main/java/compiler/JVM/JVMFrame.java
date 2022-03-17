@@ -1,8 +1,12 @@
 package compiler.JVM;
 
+import compiler.ASTNode;
+import compiler.SymbolTable;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 
 public class JVMFrame {
     int offset = 0;
@@ -10,24 +14,82 @@ public class JVMFrame {
     int varId = 1;
     char[] tabs;
     HashMap<String, Object> varIds;
+    public SymbolTable table;
+    String parameters;
+    String parameterString;
+    String returnType;
+    String identifier;
 
-    JVMFrame(HashMap<Float, Integer> constantPool) {
+    public JVMFrame(HashMap<Float, Integer> constantPool, ArrayList<ASTNode> parameters, String identifier) {
         this.varIds = new HashMap<>();
         this.constantPool = constantPool;
         this.varId += this.constantPool.size();
+        this.table = new SymbolTable();
+        this.identifier = identifier;
+        this.parameters = "";
+        this.parameterString = "";
+
+        for (ASTNode parameter:
+             parameters) {
+            this.parameterString = this.parameters + parameter.childs.get(0).op + ", ";
+            this.parameters += parameter.childs.get(0).op.substring(0, 1).toUpperCase(Locale.ROOT);
+            this.varIds.put(parameter.childs.get(1).op, this.varId);
+            this.varId++;
+        }
+
+        this.returnType = "void";
+    }
+
+    public JVMFrame(HashMap<Float, Integer> constantPool, ArrayList<ASTNode> parameters, String returnType, String identifier) {
+        this.varIds = new HashMap<>();
+        this.constantPool = constantPool;
+        this.varId += this.constantPool.size();
+        this.table = new SymbolTable();
+        this.identifier = identifier;
+        this.parameters = "";
+        this.parameterString = "";
+
+        for (ASTNode parameter:
+                parameters) {
+            this.parameterString = this.parameters + parameter.childs.get(0).op + ", ";
+            this.parameters += parameter.childs.get(0).op.substring(0, 1).toUpperCase(Locale.ROOT);
+            this.varIds.put(parameter.childs.get(1).op, this.varId);
+            this.varId++;
+        }
+
+        this.parameterString = this.parameterString.substring(0, this.parameterString.length() - 3);
+        this.returnType = returnType;
+    }
+
+    public ArrayList<String> startFrame() {
+        ArrayList<String> result = new ArrayList<>();
+
+        String declare = " public " + this.returnType + " " + this.identifier + "(" + this.parameters + ");";
+        result.add(declare);
+        result.add("\tdescriptor: (" + this.parameters + ")" + this.returnType.substring(0, 1).toUpperCase(Locale.ROOT));
+        result.add("\tflags: ACC_PUBLIC");
+        result.add("\tCode:");
+        return result;
+    }
+
+    public ArrayList<String> endFrame() {
+        ArrayList<String> result = new ArrayList<>();
+
+        result.add("");
+        return result;
     }
 
     ArrayList<String> assignIntValue(int value, String identifier) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (this.varIds.containsKey(identifier)) {
-            result.add(Arrays.toString(tabs) + offset + ": istore_" + this.varIds.get(identifier));
+            result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
             this.varIds.put(identifier, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": istore");
+            result.add("\t\t" + offset + ": istore");
             this.offset += JVMInstruction.instructionOffset("istore");
         }
         return result;
@@ -37,15 +99,15 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (this.varIds.containsKey(identifier1)) {
-            result.add(Arrays.toString(tabs) + offset + ": istore_" + this.varIds.get(identifier1));
+            result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier1));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
             this.varIds.put(identifier1, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": istore");
+            result.add("\t\t" + offset + ": istore");
             this.offset += JVMInstruction.instructionOffset("istore");
         }
         return result;
@@ -54,12 +116,12 @@ public class JVMFrame {
     ArrayList<String> assignIntStack(String identifier) {
         ArrayList<String> result = new ArrayList<>();
         if (this.varIds.containsKey(identifier)) {
-            result.add(Arrays.toString(tabs) + offset + ": istore_" + this.varIds.get(identifier));
+            result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
             this.varIds.put(identifier, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": istore");
+            result.add("\t\t" + offset + ": istore");
             this.offset += JVMInstruction.instructionOffset("istore");
         }
         return result;
@@ -70,16 +132,16 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
         return result;
     }
 
     ArrayList<String> negateIntStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ineg");
+        result.add("\t\t" + offset + ": ineg");
         this.offset += JVMInstruction.instructionOffset("ineg");
         return result;
     }
@@ -87,16 +149,16 @@ public class JVMFrame {
     ArrayList<String> negateIntId (String identifier) {
         int id = (int) this.varIds.get(identifier);
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": ineg");
+        result.add("\t\t" + offset + ": ineg");
         this.offset += JVMInstruction.instructionOffset("ineg");
         return result;
     }
 
     ArrayList<String> addIntId(String identifier1, String identifier2)  {
         ArrayList<String> result = intBinaryOp(identifier1, identifier2);
-        result.add(Arrays.toString(tabs) + offset + ": iadd");
+        result.add("\t\t" + offset + ": iadd");
         this.offset += JVMInstruction.instructionOffset("iadd");
         return result;
     }
@@ -105,44 +167,44 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": iadd");
+        result.add("\t\t" + offset + ": iadd");
         this.offset += JVMInstruction.instructionOffset("iadd");
         return result;
     }
 
     ArrayList<String> addIntStack() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iadd");
+        result.add("\t\t" + offset + ": iadd");
         this.offset += JVMInstruction.instructionOffset("iadd");
         return result;
     }
 
     ArrayList<String> addIntStackValue(boolean stack, int value) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": iadd");
+        result.add("\t\t" + offset + ": iadd");
         this.offset += JVMInstruction.instructionOffset("iadd");
         return result;
     }
 
     ArrayList<String> addIntValue(int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": iadd");
+        result.add("\t\t" + offset + ": iadd");
         this.offset += JVMInstruction.instructionOffset("iadd");
         return result;
     }
@@ -151,11 +213,11 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iadd");
+        result.add("\t\t" + offset + ": iadd");
         this.offset += JVMInstruction.instructionOffset("iadd");
         return result;
     }
@@ -164,18 +226,18 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": iadd");
+        result.add("\t\t" + offset + ": iadd");
         this.offset += JVMInstruction.instructionOffset("iadd");
         return result;
     }
 
     ArrayList<String> subtractIntId(String identifier1, String identifier2) {
         ArrayList<String> result = intBinaryOp(identifier1, identifier2);
-        result.add(Arrays.toString(tabs) + offset + ": isub");
+        result.add("\t\t" + offset + ": isub");
         this.offset += JVMInstruction.instructionOffset("isub");
         return result;
     }
@@ -184,44 +246,44 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": isub");
+        result.add("\t\t" + offset + ": isub");
         this.offset += JVMInstruction.instructionOffset("isub");
         return result;
     }
 
     ArrayList<String> subtractIntStack() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": isub");
+        result.add("\t\t" + offset + ": isub");
         this.offset += JVMInstruction.instructionOffset("isub");
         return result;
     }
 
     ArrayList<String> subtractIntStackValue(boolean stack, int value) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": isub");
+        result.add("\t\t" + offset + ": isub");
         this.offset += JVMInstruction.instructionOffset("isub");
         return result;
     }
 
     ArrayList<String> subtractIntValue(int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": isub");
+        result.add("\t\t" + offset + ": isub");
         this.offset += JVMInstruction.instructionOffset("isub");
         return result;
     }
@@ -230,11 +292,11 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": isub");
+        result.add("\t\t" + offset + ": isub");
         this.offset += JVMInstruction.instructionOffset("isub");
         return result;
     }
@@ -243,18 +305,18 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": isub");
+        result.add("\t\t" + offset + ": isub");
         this.offset += JVMInstruction.instructionOffset("isub");
         return result;
     }
 
     ArrayList<String> multiplyIntId(String identifier1, String identifier2) {
         ArrayList<String> result = intBinaryOp(identifier1, identifier2);
-        result.add(Arrays.toString(tabs) + offset + ": imul");
+        result.add("\t\t" + offset + ": imul");
         this.offset += JVMInstruction.instructionOffset("imul");
         return result;
     }
@@ -263,44 +325,44 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": imul");
+        result.add("\t\t" + offset + ": imul");
         this.offset += JVMInstruction.instructionOffset("imul");
         return result;
     }
 
     ArrayList<String> multiplyIntStack() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": imul");
+        result.add("\t\t" + offset + ": imul");
         this.offset += JVMInstruction.instructionOffset("imul");
         return result;
     }
 
     ArrayList<String> multiplyIntStackValue(boolean stack, int value) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": imul");
+        result.add("\t\t" + offset + ": imul");
         this.offset += JVMInstruction.instructionOffset("imul");
         return result;
     }
 
     ArrayList<String> multiplyIntValue(int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": imul");
+        result.add("\t\t" + offset + ": imul");
         this.offset += JVMInstruction.instructionOffset("imul");
         return result;
     }
@@ -309,11 +371,11 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": imul");
+        result.add("\t\t" + offset + ": imul");
         this.offset += JVMInstruction.instructionOffset("imul");
         return result;
     }
@@ -322,18 +384,18 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": imul");
+        result.add("\t\t" + offset + ": imul");
         this.offset += JVMInstruction.instructionOffset("imul");
         return result;
     }
 
     ArrayList<String> divisionIntId(String identifier1, String identifier2) {
         ArrayList<String> result = intBinaryOp(identifier1, identifier2);
-        result.add(Arrays.toString(tabs) + offset + ": idiv");
+        result.add("\t\t" + offset + ": idiv");
         this.offset += JVMInstruction.instructionOffset("idiv");
         return result;
     }
@@ -342,44 +404,44 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": idiv");
+        result.add("\t\t" + offset + ": idiv");
         this.offset += JVMInstruction.instructionOffset("idiv");
         return result;
     }
 
     ArrayList<String> divisionIntStack() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": idiv");
+        result.add("\t\t" + offset + ": idiv");
         this.offset += JVMInstruction.instructionOffset("idiv");
         return result;
     }
 
     ArrayList<String> divisionIntStackValue(boolean stack, int value) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": idiv");
+        result.add("\t\t" + offset + ": idiv");
         this.offset += JVMInstruction.instructionOffset("idiv");
         return result;
     }
 
     ArrayList<String> divisionIntValue(int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": idiv");
+        result.add("\t\t" + offset + ": idiv");
         this.offset += JVMInstruction.instructionOffset("idiv");
         return result;
     }
@@ -388,11 +450,11 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": idiv");
+        result.add("\t\t" + offset + ": idiv");
         this.offset += JVMInstruction.instructionOffset("idiv");
         return result;
     }
@@ -401,11 +463,11 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": idiv");
+        result.add("\t\t" + offset + ": idiv");
         this.offset += JVMInstruction.instructionOffset("idiv");
         return result;
     }
@@ -413,15 +475,15 @@ public class JVMFrame {
     ArrayList<String> assignRealValue(float value, String identifier) {
         int id = this.constantPool.get(value);
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (this.varIds.containsKey(identifier)) {
-            result.add(Arrays.toString(tabs) + offset + ": fstore_" + this.varIds.get(identifier));
+            result.add("\t\t" + offset + ": fstore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("fstore");
         } else {
             this.varIds.put(identifier, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": fstore");
+            result.add("\t\t" + offset + ": fstore");
             this.offset += JVMInstruction.instructionOffset("fstore");
         }
         return result;
@@ -431,29 +493,29 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (this.varIds.containsKey(identifier1)) {
-            result.add(Arrays.toString(tabs) + offset + ": fstore_" + this.varIds.get(identifier1));
+            result.add("\t\t" + offset + ": fstore_" + this.varIds.get(identifier1));
             this.offset += JVMInstruction.instructionOffset("fstore");
         } else {
             this.varIds.put(identifier1, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": fstore");
+            result.add("\t\t" + offset + ": fstore");
             this.offset += JVMInstruction.instructionOffset("fstore");
         }
         return result;
     }
 
-    ArrayList<String> assignRealStack(float value, String identifier) {
+    ArrayList<String> assignRealStack(String identifier) {
         ArrayList<String> result = new ArrayList<>();
         if (this.varIds.containsKey(identifier)) {
-            result.add(Arrays.toString(tabs) + offset + ": fstore_" + this.varIds.get(identifier));
+            result.add("\t\t" + offset + ": fstore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("fstore");
         } else {
             this.varIds.put(identifier, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": fstore");
+            result.add("\t\t" + offset + ": fstore");
             this.offset += JVMInstruction.instructionOffset("fstore");
         }
         return result;
@@ -461,7 +523,7 @@ public class JVMFrame {
 
     ArrayList<String> assignReal(String identifier) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fstore");
+        result.add("\t\t" + offset + ": fstore");
         this.varIds.put(identifier, this.varId);
         this.varId++;
         this.varId++;
@@ -474,16 +536,16 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id2);
+        result.add("\t\t" + offset + ": fload_" + id2);
         this.offset += JVMInstruction.instructionOffset("fload");
         return result;
     }
 
     ArrayList<String> negateRealStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fneg");
+        result.add("\t\t" + offset + ": fneg");
         this.offset += JVMInstruction.instructionOffset("fneg");
         return result;
     }
@@ -491,16 +553,16 @@ public class JVMFrame {
     ArrayList<String> negateRealId (String identifier) {
         int id = (int) this.varIds.get(identifier);
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": fneg");
+        result.add("\t\t" + offset + ": fneg");
         this.offset += JVMInstruction.instructionOffset("fneg");
         return result;
     }
 
     ArrayList<String> addRealId(String identifier1, String identifier2)  {
         ArrayList<String> result = realBinaryOp(identifier1, identifier2);
-        result.add(Arrays.toString(tabs) + offset + ": fadd");
+        result.add("\t\t" + offset + ": fadd");
         this.offset += JVMInstruction.instructionOffset("fadd");
         return result;
     }
@@ -509,20 +571,20 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": fadd");
+        result.add("\t\t" + offset + ": fadd");
         this.offset += JVMInstruction.instructionOffset("fadd");
         return result;
     }
 
     ArrayList<String> addRealStack() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fadd");
+        result.add("\t\t" + offset + ": fadd");
         this.offset += JVMInstruction.instructionOffset("fadd");
         return result;
     }
@@ -531,13 +593,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": fadd");
+        result.add("\t\t" + offset + ": fadd");
         this.offset += JVMInstruction.instructionOffset("fadd");
         return result;
     }
@@ -547,11 +609,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fadd");
+        result.add("\t\t" + offset + ": fadd");
         this.offset += JVMInstruction.instructionOffset("fadd");
         return result;
     }
@@ -561,11 +623,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": fadd");
+        result.add("\t\t" + offset + ": fadd");
         this.offset += JVMInstruction.instructionOffset("fadd");
         return result;
     }
@@ -575,18 +637,18 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fadd");
+        result.add("\t\t" + offset + ": fadd");
         this.offset += JVMInstruction.instructionOffset("fadd");
         return result;
     }
 
     ArrayList<String> subtractRealId(String identifier1, String identifier2) {
         ArrayList<String> result = realBinaryOp(identifier1, identifier2);
-        result.add(Arrays.toString(tabs) + offset + ": fsub");
+        result.add("\t\t" + offset + ": fsub");
         this.offset += JVMInstruction.instructionOffset("fsub");
         return result;
     }
@@ -595,20 +657,20 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": fsub");
+        result.add("\t\t" + offset + ": fsub");
         this.offset += JVMInstruction.instructionOffset("fsub");
         return result;
     }
 
     ArrayList<String> subtractRealStack() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fsub");
+        result.add("\t\t" + offset + ": fsub");
         this.offset += JVMInstruction.instructionOffset("fsub");
         return result;
     }
@@ -617,13 +679,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": fsub");
+        result.add("\t\t" + offset + ": fsub");
         this.offset += JVMInstruction.instructionOffset("fsub");
         return result;
     }
@@ -633,11 +695,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fsub");
+        result.add("\t\t" + offset + ": fsub");
         this.offset += JVMInstruction.instructionOffset("fsub");
         return result;
     }
@@ -647,11 +709,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": fsub");
+        result.add("\t\t" + offset + ": fsub");
         this.offset += JVMInstruction.instructionOffset("fsub");
         return result;
     }
@@ -661,18 +723,18 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fsub");
+        result.add("\t\t" + offset + ": fsub");
         this.offset += JVMInstruction.instructionOffset("fsub");
         return result;
     }
 
     ArrayList<String> multiplyRealId(String identifier1, String identifier2) {
         ArrayList<String> result = realBinaryOp(identifier1, identifier2);
-        result.add(Arrays.toString(tabs) + offset + ": fmul");
+        result.add("\t\t" + offset + ": fmul");
         this.offset += JVMInstruction.instructionOffset("fmul");
         return result;
     }
@@ -681,20 +743,20 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": fmul");
+        result.add("\t\t" + offset + ": fmul");
         this.offset += JVMInstruction.instructionOffset("fmul");
         return result;
     }
 
     ArrayList<String> multiplyRealStack() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fmul");
+        result.add("\t\t" + offset + ": fmul");
         this.offset += JVMInstruction.instructionOffset("fmul");
         return result;
     }
@@ -703,13 +765,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": fmul");
+        result.add("\t\t" + offset + ": fmul");
         this.offset += JVMInstruction.instructionOffset("fmul");
         return result;
     }
@@ -719,11 +781,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fmul");
+        result.add("\t\t" + offset + ": fmul");
         this.offset += JVMInstruction.instructionOffset("fmul");
         return result;
     }
@@ -733,11 +795,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": fmul");
+        result.add("\t\t" + offset + ": fmul");
         this.offset += JVMInstruction.instructionOffset("fmul");
         return result;
     }
@@ -747,18 +809,18 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fmul");
+        result.add("\t\t" + offset + ": fmul");
         this.offset += JVMInstruction.instructionOffset("fmul");
         return result;
     }
 
-    ArrayList<String> divisionDoubleId(String identifier1, String identifier2) {
+    ArrayList<String> divisionRealId(String identifier1, String identifier2) {
         ArrayList<String> result = realBinaryOp(identifier1, identifier2);
-        result.add(Arrays.toString(tabs) + offset + ": fdiv");
+        result.add("\t\t" + offset + ": fdiv");
         this.offset += JVMInstruction.instructionOffset("fdiv");
         return result;
     }
@@ -767,20 +829,20 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": fdiv");
+        result.add("\t\t" + offset + ": fdiv");
         this.offset += JVMInstruction.instructionOffset("fdiv");
         return result;
     }
 
     ArrayList<String> divisionRealStack() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fdiv");
+        result.add("\t\t" + offset + ": fdiv");
         this.offset += JVMInstruction.instructionOffset("fdiv");
         return result;
     }
@@ -789,13 +851,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (stack) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": fdiv");
+        result.add("\t\t" + offset + ": fdiv");
         this.offset += JVMInstruction.instructionOffset("fdiv");
         return result;
     }
@@ -805,11 +867,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fdiv");
+        result.add("\t\t" + offset + ": fdiv");
         this.offset += JVMInstruction.instructionOffset("fdiv");
         return result;
     }
@@ -819,11 +881,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": fdiv");
+        result.add("\t\t" + offset + ": fdiv");
         this.offset += JVMInstruction.instructionOffset("fdiv");
         return result;
     }
@@ -833,11 +895,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": fdiv");
+        result.add("\t\t" + offset + ": fdiv");
         this.offset += JVMInstruction.instructionOffset("fdiv");
         return result;
     }
@@ -850,15 +912,15 @@ public class JVMFrame {
         } else {
             valued = 0;
         }
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + valued);
+        result.add("\t\t" + offset + ": bipush " + valued);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (this.varIds.containsKey(identifier)) {
-            result.add(Arrays.toString(tabs) + offset + ": istore_" + this.varIds.get(identifier));
+            result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
             this.varIds.put(identifier, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": istore");
+            result.add("\t\t" + offset + ": istore");
             this.offset += JVMInstruction.instructionOffset("istore");
         }
         return result;
@@ -868,12 +930,12 @@ public class JVMFrame {
         ArrayList<String> result = new ArrayList<>();
 
         if (this.varIds.containsKey(identifier)) {
-            result.add(Arrays.toString(tabs) + offset + ": istore_" + this.varIds.get(identifier));
+            result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
             this.varIds.put(identifier, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": istore");
+            result.add("\t\t" + offset + ": istore");
             this.offset += JVMInstruction.instructionOffset("istore");
         }
         return result;
@@ -883,15 +945,15 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (this.varIds.containsKey(identifier1)) {
-            result.add(Arrays.toString(tabs) + offset + ": istore_" + this.varIds.get(identifier1));
+            result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier1));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
             this.varIds.put(identifier1, this.varId);
             this.varId++;
-            result.add(Arrays.toString(tabs) + offset + ": istore");
+            result.add("\t\t" + offset + ": istore");
             this.offset += JVMInstruction.instructionOffset("istore");
         }
         return result;
@@ -902,11 +964,11 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": ior");
+        result.add("\t\t" + offset + ": ior");
         this.offset += JVMInstruction.instructionOffset("ior");
         return result;
     }
@@ -915,15 +977,15 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
-        result.add(Arrays.toString(tabs) + offset + ": ior");
+        result.add("\t\t" + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": ior");
         this.offset += JVMInstruction.instructionOffset("ior");
         return result;
     }
 
     ArrayList<String> orStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ior");
+        result.add("\t\t" + offset + ": ior");
         this.offset += JVMInstruction.instructionOffset("ior");
         return result;
     }
@@ -932,14 +994,27 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         if (value) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
-        result.add(Arrays.toString(tabs) + offset + ": ior");
+        result.add("\t\t" + offset + ": ior");
+        this.offset += JVMInstruction.instructionOffset("ior");
+        return result;
+    }
+
+    ArrayList<String> orValueStack (boolean value) {
+        ArrayList<String> result = new ArrayList<>();
+        if (value) {
+            result.add("\t\t" + offset + ": iconst_" + 1);
+        } else {
+            result.add("\t\t" + offset + ": iconst_" + 0);
+        }
+        this.offset += JVMInstruction.instructionOffset("iconst");
+        result.add("\t\t" + offset + ": ior");
         this.offset += JVMInstruction.instructionOffset("ior");
         return result;
     }
@@ -947,18 +1022,18 @@ public class JVMFrame {
     ArrayList<String> orValue (boolean value1, boolean value2) {
         ArrayList<String> result = new ArrayList<>();
         if (value1) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
         if (value2) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
-        result.add(Arrays.toString(tabs) + offset + ": ior");
+        result.add("\t\t" + offset + ": ior");
         this.offset += JVMInstruction.instructionOffset("ior");
         return result;
     }
@@ -968,11 +1043,11 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iand");
+        result.add("\t\t" + offset + ": iand");
         this.offset += JVMInstruction.instructionOffset("iand");
         return result;
     }
@@ -981,15 +1056,28 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
-        result.add(Arrays.toString(tabs) + offset + ": iand");
+        result.add("\t\t" + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iand");
         this.offset += JVMInstruction.instructionOffset("iand");
         return result;
     }
 
     ArrayList<String> andStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iand");
+        result.add("\t\t" + offset + ": iand");
+        this.offset += JVMInstruction.instructionOffset("iand");
+        return result;
+    }
+
+    ArrayList<String> andValueStack (boolean value) {
+        ArrayList<String> result = new ArrayList<>();
+        if (value) {
+            result.add("\t\t" + offset + ": iconst_" + 1);
+        } else {
+            result.add("\t\t" + offset + ": iconst_" + 0);
+        }
+        this.offset += JVMInstruction.instructionOffset("iconst");
+        result.add("\t\t" + offset + ": iand");
         this.offset += JVMInstruction.instructionOffset("iand");
         return result;
     }
@@ -998,14 +1086,14 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         if (value) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
-        result.add(Arrays.toString(tabs) + offset + ": iand");
+        result.add("\t\t" + offset + ": iand");
         this.offset += JVMInstruction.instructionOffset("iand");
         return result;
     }
@@ -1013,18 +1101,18 @@ public class JVMFrame {
     ArrayList<String> andValue (boolean value1, boolean value2) {
         ArrayList<String> result = new ArrayList<>();
         if (value1) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
         if (value2) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
-        result.add(Arrays.toString(tabs) + offset + ": iand");
+        result.add("\t\t" + offset + ": iand");
         this.offset += JVMInstruction.instructionOffset("iand");
         return result;
     }
@@ -1034,11 +1122,11 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": ixor");
+        result.add("\t\t" + offset + ": ixor");
         this.offset += JVMInstruction.instructionOffset("ixor");
         return result;
     }
@@ -1047,15 +1135,28 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
-        result.add(Arrays.toString(tabs) + offset + ": ixor");
+        result.add("\t\t" + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": ixor");
         this.offset += JVMInstruction.instructionOffset("ixor");
         return result;
     }
 
     ArrayList<String> xorStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ixor");
+        result.add("\t\t" + offset + ": ixor");
+        this.offset += JVMInstruction.instructionOffset("ixor");
+        return result;
+    }
+
+    ArrayList<String> xorValueStack (boolean value) {
+        ArrayList<String> result = new ArrayList<>();
+        if (value) {
+            result.add("\t\t" + offset + ": iconst_" + 1);
+        } else {
+            result.add("\t\t" + offset + ": iconst_" + 0);
+        }
+        this.offset += JVMInstruction.instructionOffset("iconst");
+        result.add("\t\t" + offset + ": ixor");
         this.offset += JVMInstruction.instructionOffset("ixor");
         return result;
     }
@@ -1064,15 +1165,15 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (value) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
-        result.add(Arrays.toString(tabs) + offset + ": ixor");
+        result.add("\t\t" + offset + ": ixor");
         this.offset += JVMInstruction.instructionOffset("ixor");
         return result;
     }
@@ -1080,35 +1181,37 @@ public class JVMFrame {
     ArrayList<String> xorValue (boolean value1, boolean value2) {
         ArrayList<String> result = new ArrayList<>();
         if (value1) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
         if (value2) {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+            result.add("\t\t" + offset + ": iconst_" + 1);
         } else {
-            result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+            result.add("\t\t" + offset + ": iconst_" + 0);
         }
         this.offset += JVMInstruction.instructionOffset("iconst");
-        result.add(Arrays.toString(tabs) + offset + ": ixor");
+        result.add("\t\t" + offset + ": ixor");
         this.offset += JVMInstruction.instructionOffset("ixor");
         return result;
     }
 
     private ArrayList<String> getIfShift(ArrayList<String> result) {
         this.offset += JVMInstruction.instructionOffset("if_icmp");
-        result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+        result.add("\t\t" + offset + ": iconst_" + 0);
         this.offset += JVMInstruction.instructionOffset("iconst");
-        result.add(Arrays.toString(tabs) + offset + ": goto " + this.offset + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
+        int val = this.offset + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto");
+        result.add("\t\t" + offset + ": goto " + val);
         this.offset += JVMInstruction.instructionOffset("goto");
-        result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+        result.add("\t\t" + offset + ": iconst_" + 1);
         this.offset += JVMInstruction.instructionOffset("iconst");
         return result;
     }
 
     private ArrayList<String> getStringsGt(ArrayList<String> result) {
-        result.add(Arrays.toString(tabs) + offset + ": if_icmpgt " + this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
+        int val = this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto");
+        result.add("\t\t" + offset + ": if_icmpgt " + val);
         return getIfShift(result);
     }
 
@@ -1117,9 +1220,9 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
         return getStringsGt(result);
     }
@@ -1128,10 +1231,10 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsGt(result);
@@ -1141,12 +1244,12 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsGt(result);
@@ -1154,10 +1257,10 @@ public class JVMFrame {
 
     ArrayList<String> moreIntValueStack (int value, boolean rightValue) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsGt(result);
@@ -1170,15 +1273,16 @@ public class JVMFrame {
 
     ArrayList<String> moreIntValue (int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
         return getStringsGt(result);
     }
 
     private ArrayList<String> getStringsGe(ArrayList<String> result) {
-        result.add(Arrays.toString(tabs) + offset + ": if_icmpge " + this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
+        int val = this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto");
+        result.add("\t\t" + offset + ": if_icmpge " + val);
         return getIfShift(result);
     }
 
@@ -1187,9 +1291,9 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
         return getStringsGe(result);
     }
@@ -1198,10 +1302,10 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsGe(result);
@@ -1211,12 +1315,12 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsGe(result);
@@ -1224,10 +1328,10 @@ public class JVMFrame {
 
     ArrayList<String> moreEqualIntValueStack (int value, boolean rightValue) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsGe(result);
@@ -1240,15 +1344,16 @@ public class JVMFrame {
 
     ArrayList<String> moreEqualIntValue (int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
         return getStringsGe(result);
     }
 
     private ArrayList<String> getStringsEq(ArrayList<String> result) {
-        result.add(Arrays.toString(tabs) + offset + ": if_icmpeq " + this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
+        int val = this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto");
+        result.add("\t\t" + offset + ": if_icmpeq " + val);
         return getIfShift(result);
     }
 
@@ -1257,9 +1362,9 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
         return getStringsEq(result);
     }
@@ -1268,10 +1373,10 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsEq(result);
@@ -1281,12 +1386,12 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsEq(result);
@@ -1294,10 +1399,10 @@ public class JVMFrame {
 
     ArrayList<String> equalIntValueStack (int value, boolean rightValue) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsEq(result);
@@ -1310,15 +1415,16 @@ public class JVMFrame {
 
     ArrayList<String> equalIntValue (int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
         return getStringsEq(result);
     }
 
     private ArrayList<String> getStringsLt(ArrayList<String> result) {
-        result.add(Arrays.toString(tabs) + offset + ": if_icmplt " + this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
+        int val = this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto");
+        result.add("\t\t" + offset + ": if_icmplt " + val);
         return getIfShift(result);
     }
 
@@ -1327,9 +1433,9 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
         return getStringsLt(result);
     }
@@ -1338,10 +1444,10 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsLt(result);
@@ -1351,12 +1457,12 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsLt(result);
@@ -1364,10 +1470,10 @@ public class JVMFrame {
 
     ArrayList<String> lessIntValueStack (int value, boolean rightValue) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsLt(result);
@@ -1380,15 +1486,16 @@ public class JVMFrame {
 
     ArrayList<String> lessIntValue (int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
         return getStringsLt(result);
     }
 
     private ArrayList<String> getStringsLe(ArrayList<String> result) {
-        result.add(Arrays.toString(tabs) + offset + ": if_icmple " + this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
+        int val = this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto");
+        result.add("\t\t" + offset + ": if_icmple " + val);
         return getIfShift(result);
     }
 
@@ -1397,9 +1504,9 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
         return getStringsLe(result);
     }
@@ -1408,10 +1515,10 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsLe(result);
@@ -1421,12 +1528,12 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsLe(result);
@@ -1434,10 +1541,10 @@ public class JVMFrame {
 
     ArrayList<String> lessEqualIntValueStack (int value, boolean rightValue) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsLe(result);
@@ -1450,15 +1557,16 @@ public class JVMFrame {
 
     ArrayList<String> lessEqualIntValue (int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
         return getStringsLe(result);
     }
 
     private ArrayList<String> getStringsNe(ArrayList<String> result) {
-        result.add(Arrays.toString(tabs) + offset + ": if_icmpne " + this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
+        int val = this.offset + JVMInstruction.instructionOffset("if_icmp") + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto");
+        result.add("\t\t" + offset + ": if_icmpne " + val);
         return getIfShift(result);
     }
 
@@ -1467,9 +1575,9 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
         return getStringsNe(result);
     }
@@ -1478,10 +1586,10 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsNe(result);
@@ -1491,12 +1599,12 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id);
+        result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsNe(result);
@@ -1504,10 +1612,10 @@ public class JVMFrame {
 
     ArrayList<String> notEqualIntValueStack (int value, boolean rightValue) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value);
+        result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
         return getStringsNe(result);
@@ -1520,20 +1628,20 @@ public class JVMFrame {
 
     ArrayList<String> notEqualIntValue (int value1, int value2) {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value1);
+        result.add("\t\t" + offset + ": bipush " + value1);
         this.offset += JVMInstruction.instructionOffset("bipush");
-        result.add(Arrays.toString(tabs) + offset + ": bipush " + value2);
+        result.add("\t\t" + offset + ": bipush " + value2);
         this.offset += JVMInstruction.instructionOffset("bipush");
         return getStringsNe(result);
     }
 
     private ArrayList<String> getIfIfShift(ArrayList<String> result) {
         this.offset += JVMInstruction.instructionOffset("if");
-        result.add(Arrays.toString(tabs) + offset + ": iconst_" + 0);
+        result.add("\t\t" + offset + ": iconst_" + 0);
         this.offset += JVMInstruction.instructionOffset("iconst");
-        result.add(Arrays.toString(tabs) + offset + ": goto " + this.offset + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
+        result.add("\t\t" + offset + ": goto " + this.offset + JVMInstruction.instructionOffset("iconst") + JVMInstruction.instructionOffset("goto"));
         this.offset += JVMInstruction.instructionOffset("goto");
-        result.add(Arrays.toString(tabs) + offset + ": iconst_" + 1);
+        result.add("\t\t" + offset + ": iconst_" + 1);
         this.offset += JVMInstruction.instructionOffset("iconst");
         return result;
     }
@@ -1543,13 +1651,13 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": fcmp");
+        result.add("\t\t" + offset + ": fcmp");
         this.offset += JVMInstruction.instructionOffset("fcmp");
-        result.add(Arrays.toString(tabs) + offset + ": ifgt");
+        result.add("\t\t" + offset + ": ifgt");
         return getIfIfShift(result);
     }
 
@@ -1558,15 +1666,15 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifgt");
+        result.add("\t\t" + offset + ": ifgt");
         return getIfIfShift(result);
     }
 
@@ -1574,19 +1682,19 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifgt");
+        result.add("\t\t" + offset + ": ifgt");
         return getIfIfShift(result);
     }
 
     ArrayList<String> moreRealStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ifgt");
+        result.add("\t\t" + offset + ": ifgt");
         return getIfIfShift(result);
     }
 
@@ -1594,13 +1702,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifgt");
+        result.add("\t\t" + offset + ": ifgt");
         return getIfIfShift(result);
     }
 
@@ -1609,11 +1717,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ifgt");
+        result.add("\t\t" + offset + ": ifgt");
         return getIfIfShift(result);
     }
 
@@ -1622,13 +1730,13 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": fcmp");
+        result.add("\t\t" + offset + ": fcmp");
         this.offset += JVMInstruction.instructionOffset("fcmp");
-        result.add(Arrays.toString(tabs) + offset + ": ifge");
+        result.add("\t\t" + offset + ": ifge");
         return getIfIfShift(result);
     }
 
@@ -1637,15 +1745,15 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifge");
+        result.add("\t\t" + offset + ": ifge");
         return getIfIfShift(result);
     }
 
@@ -1653,19 +1761,19 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifge");
+        result.add("\t\t" + offset + ": ifge");
         return getIfIfShift(result);
     }
 
     ArrayList<String> moreEqualRealStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ifge");
+        result.add("\t\t" + offset + ": ifge");
         return getIfIfShift(result);
     }
 
@@ -1673,13 +1781,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifge");
+        result.add("\t\t" + offset + ": ifge");
         return getIfIfShift(result);
     }
 
@@ -1688,11 +1796,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ifge");
+        result.add("\t\t" + offset + ": ifge");
         return getIfIfShift(result);
     }
 
@@ -1701,13 +1809,13 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": fcmp");
+        result.add("\t\t" + offset + ": fcmp");
         this.offset += JVMInstruction.instructionOffset("fcmp");
-        result.add(Arrays.toString(tabs) + offset + ": ifeq");
+        result.add("\t\t" + offset + ": ifeq");
         return getIfIfShift(result);
     }
 
@@ -1716,15 +1824,15 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifeq");
+        result.add("\t\t" + offset + ": ifeq");
         return getIfIfShift(result);
     }
 
@@ -1732,19 +1840,19 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifeq");
+        result.add("\t\t" + offset + ": ifeq");
         return getIfIfShift(result);
     }
 
     ArrayList<String> equalRealStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ifeq");
+        result.add("\t\t" + offset + ": ifeq");
         return getIfIfShift(result);
     }
 
@@ -1752,13 +1860,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifeq");
+        result.add("\t\t" + offset + ": ifeq");
         return getIfIfShift(result);
     }
 
@@ -1767,11 +1875,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ifeq");
+        result.add("\t\t" + offset + ": ifeq");
         return getIfIfShift(result);
     }
 
@@ -1780,13 +1888,13 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": fcmp");
+        result.add("\t\t" + offset + ": fcmp");
         this.offset += JVMInstruction.instructionOffset("fcmp");
-        result.add(Arrays.toString(tabs) + offset + ": iflt");
+        result.add("\t\t" + offset + ": iflt");
         return getIfIfShift(result);
     }
 
@@ -1795,15 +1903,15 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": iflt");
+        result.add("\t\t" + offset + ": iflt");
         return getIfIfShift(result);
     }
 
@@ -1811,19 +1919,19 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": iflt");
+        result.add("\t\t" + offset + ": iflt");
         return getIfIfShift(result);
     }
 
     ArrayList<String> lessRealStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iflt");
+        result.add("\t\t" + offset + ": iflt");
         return getIfIfShift(result);
     }
 
@@ -1831,13 +1939,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": iflt");
+        result.add("\t\t" + offset + ": iflt");
         return getIfIfShift(result);
     }
 
@@ -1846,11 +1954,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": iflt");
+        result.add("\t\t" + offset + ": iflt");
         return getIfIfShift(result);
     }
 
@@ -1859,13 +1967,13 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": fcmp");
+        result.add("\t\t" + offset + ": fcmp");
         this.offset += JVMInstruction.instructionOffset("fcmp");
-        result.add(Arrays.toString(tabs) + offset + ": ifle");
+        result.add("\t\t" + offset + ": ifle");
         return getIfIfShift(result);
     }
 
@@ -1874,15 +1982,15 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifle");
+        result.add("\t\t" + offset + ": ifle");
         return getIfIfShift(result);
     }
 
@@ -1890,19 +1998,19 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifle");
+        result.add("\t\t" + offset + ": ifle");
         return getIfIfShift(result);
     }
 
     ArrayList<String> lessEqualRealStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ifle");
+        result.add("\t\t" + offset + ": ifle");
         return getIfIfShift(result);
     }
 
@@ -1910,13 +2018,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifle");
+        result.add("\t\t" + offset + ": ifle");
         return getIfIfShift(result);
     }
 
@@ -1925,11 +2033,11 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ifle");
+        result.add("\t\t" + offset + ": ifle");
         return getIfIfShift(result);
     }
 
@@ -1938,13 +2046,13 @@ public class JVMFrame {
         int id2 = (int) this.varIds.get(identifier2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id1);
+        result.add("\t\t" + offset + ": iload_" + id1);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": iload_" + id2);
+        result.add("\t\t" + offset + ": iload_" + id2);
         this.offset += JVMInstruction.instructionOffset("iload");
-        result.add(Arrays.toString(tabs) + offset + ": fcmp");
+        result.add("\t\t" + offset + ": fcmp");
         this.offset += JVMInstruction.instructionOffset("fcmp");
-        result.add(Arrays.toString(tabs) + offset + ": ifne");
+        result.add("\t\t" + offset + ": ifne");
         return getIfIfShift(result);
     }
 
@@ -1953,15 +2061,15 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id1);
+        result.add("\t\t" + offset + ": fload_" + id1);
         this.offset += JVMInstruction.instructionOffset("fload");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifne");
+        result.add("\t\t" + offset + ": ifne");
         return getIfIfShift(result);
     }
 
@@ -1969,19 +2077,19 @@ public class JVMFrame {
         int id = (int) this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": fload_" + id);
+        result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifne");
+        result.add("\t\t" + offset + ": ifne");
         return getIfIfShift(result);
     }
 
     ArrayList<String> notEqualRealStack () {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ifne");
+        result.add("\t\t" + offset + ": ifne");
         return getIfIfShift(result);
     }
 
@@ -1989,13 +2097,13 @@ public class JVMFrame {
         int id = this.constantPool.get(value);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id);
+        result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (!rightValue) {
-            result.add(Arrays.toString(tabs) + offset + ": swap");
+            result.add("\t\t" + offset + ": swap");
             this.offset += JVMInstruction.instructionOffset("swap");
         }
-        result.add(Arrays.toString(tabs) + offset + ": ifne");
+        result.add("\t\t" + offset + ": ifne");
         return getIfIfShift(result);
     }
 
@@ -2004,31 +2112,31 @@ public class JVMFrame {
         int id2 = this.constantPool.get(value2);
 
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id1);
+        result.add("\t\t" + offset + ": ldc " + id1);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ldc " + id2);
+        result.add("\t\t" + offset + ": ldc " + id2);
         this.offset += JVMInstruction.instructionOffset("ldc");
-        result.add(Arrays.toString(tabs) + offset + ": ifne");
+        result.add("\t\t" + offset + ": ifne");
         return getIfIfShift(result);
     }
 
     ArrayList<String> returnVoid() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": return");
+        result.add("\t\t" + offset + ": return");
         this.offset += JVMInstruction.instructionOffset("return");
         return result;
     }
 
     ArrayList<String> returnInt() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": ireturn");
+        result.add("\t\t" + offset + ": ireturn");
         this.offset += JVMInstruction.instructionOffset("ireturn");
         return result;
     }
 
     ArrayList<String> returnReal() {
         ArrayList<String> result = new ArrayList<>();
-        result.add(Arrays.toString(tabs) + offset + ": dreturn");
+        result.add("\t\t" + offset + ": dreturn");
         this.offset += JVMInstruction.instructionOffset("dreturn");
         return result;
     }
