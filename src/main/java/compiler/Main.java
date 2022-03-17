@@ -22,7 +22,10 @@ public class Main {
         parser.setTokens(tokens);
         parser.run();
         JVMCompiler compiler = new JVMCompiler(new ArrayList<>(), "program");
-        ASTNode root = ASTNode.exampleTwo(new ASTNode("root"));
+        ASTNode root = ASTNode.chooseEx(filename);
+        if (root == null) {
+            return;
+        }
         compiler.traverseTree(root);
         FileWriter writer = new FileWriter(filename + ".class");
         for (String line:

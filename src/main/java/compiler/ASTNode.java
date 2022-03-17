@@ -1,6 +1,7 @@
 package compiler;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class ASTNode {
     public String op;
@@ -34,6 +35,17 @@ public class ASTNode {
 
     void addChild (ASTNode node) {
         this.childs.add(node);
+    }
+
+    static ASTNode chooseEx (String filename) {
+        ASTNode root = new ASTNode("root");
+        if (Objects.equals(filename, "example1")) {
+            return exampleOne(root);
+        } else if (Objects.equals(filename, "example2")) {
+            return exampleTwo(root);
+        } else {
+            return null;
+        }
     }
 
     static ASTNode exampleOne(ASTNode root) {
