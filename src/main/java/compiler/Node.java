@@ -54,7 +54,13 @@ public class Node {
     private void print(StringBuilder buffer, String prefix, String childrenPrefix) {
         // System.out.println("Enter in node " + identifier);
         buffer.append(prefix);
-        buffer.append(identifier);
+        switch (identifier)
+        {
+            case "intValue" -> buffer.append(intValue);
+            case "realValue" -> buffer.append(realValue);
+            case "boolValue" -> buffer.append(boolValue);
+            default -> buffer.append(identifier);
+        }
         buffer.append('\n');
         if (descendants == null) {
             return;
