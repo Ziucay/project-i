@@ -1,0 +1,9 @@
+routine a () is 
+	var ad is 2 + 3
+	var ab is 2 * 3
+	if ad >= ab then
+		ad := ab
+	else 
+		ab := ad
+	end
+end 
