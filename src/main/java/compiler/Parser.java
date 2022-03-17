@@ -868,7 +868,7 @@ public class Parser {
                 case 43:
 //#line 157 "yacc.y"
                 {
-                    yyval = new ParserVal(new Node("if-else", null, Arrays.asList(val_peek(5).obj, val_peek(3).obj, val_peek(1).obj)));
+                    yyval = new ParserVal(new Node("if", null, Arrays.asList(val_peek(5).obj, val_peek(3).obj, val_peek(1).obj)));
                 }
                 break;
                 case 44:
