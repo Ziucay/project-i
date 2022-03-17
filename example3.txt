@@ -1,0 +1,3 @@
+routine a () is 
+	var 0shibka is 2 + 3
+end
