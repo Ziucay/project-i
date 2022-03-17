@@ -1,0 +1,20 @@
+public class program
+ minor version: 0
+ minor version: 55
+ flags: ACC_PUBLIC
+ this_class: #0
+ super_class: #0
+{
+ public void a();
+	descriptor: ()V
+	flags: ACC_PUBLIC
+	Code:
+		0: bipush 1
+		2: bipush 2
+		4: iadd
+		5: istore
+		6: iload_1
+		7: bipush 3
+		9: iadd
+		10: istore
+}
