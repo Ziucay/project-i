@@ -1,0 +1,7 @@
+routine a () is 
+	var a : integer
+	for a in reverse 16 .. 11 
+	loop
+	end
+	a := 1
+end

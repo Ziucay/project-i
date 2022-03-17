@@ -1,4 +1,4 @@
 routine a () is 
-	var ab is 1.0 + 2.2
+	var ab is 1 + 2
 	var cd is ab + 3
 end

@@ -1,4 +1,4 @@
-public class example1
+public class example5
  minor version: 0
  minor version: 55
  flags: ACC_PUBLIC
@@ -9,8 +9,12 @@ public class example1
 	descriptor: ()V
 	flags: ACC_PUBLIC
 	Code:
-		0: bipush 1
-		2: bipush 2
-		4: iadd
-		5: istore
+		0: bipush 16
+		2: istore_1
+		3: ifgt 9
+		6: goto 12
+		9: iinc 1 -1
+		12: goto 3
+		15: bipush 1
+		17: istore_1
 }

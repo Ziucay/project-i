@@ -1,6 +1,6 @@
 package compiler.JVM;
 
-import compiler.ASTNode;
+import compiler.Node;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,19 +35,19 @@ public class JVMCompiler {
         }
     }
 
-    public void traverseTree (ASTNode root) {
+    public void traverseTree (Node root) {
         this.code.add("{");
-        for (int i = 0; i < root.childs.size(); i++) {
-            ASTNode routine = root.childs.get(i);
-            if (routine.childs.size() == 3) {
-                JVMFrame frame = new JVMFrame(this.constantPool, routine.childs.get(1).childs, routine.childs.get(0).op);
+        for (int i = 0; i < root.descendants.size(); i++) {
+            Node routine = root.descendants.get(i);
+            if (routine.descendants.size() == 3) {
+                JVMFrame frame = new JVMFrame(this.constantPool, routine.descendants.get(1).descendants, routine.descendants.get(0).identifier);
                 code.addAll(frame.startFrame());
-                visitNode (routine.childs.get(2), frame);
+                visitNode (routine.descendants.get(2), frame);
                 code.addAll(frame.endFrame());
             } else {
-                JVMFrame frame = new JVMFrame(this.constantPool, routine.childs.get(1).childs, routine.childs.get(2).op, routine.childs.get(0).op);
+                JVMFrame frame = new JVMFrame(this.constantPool, routine.descendants.get(1).descendants, routine.descendants.get(2).identifier, routine.descendants.get(0).identifier);
                 code.addAll(frame.startFrame());
-                visitNode(routine.childs.get(3), frame);
+                visitNode(routine.descendants.get(3), frame);
                 code.addAll(frame.endFrame());
             }
         }
@@ -55,142 +55,215 @@ public class JVMCompiler {
         this.code.add("}");
     }
 
-    String visitNode (ASTNode node, JVMFrame frame) {
+    String visitNode (Node node, JVMFrame frame) {
         String left, right;
+        String start, end;
+        String identifier;
         ArrayList<Integer> offset = new ArrayList<>();
         ArrayList<Integer> index = new ArrayList<>();
-        switch (node.op) {
-            case "+":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performAdd(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case "-":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performSubtract(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case "*":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performMultiply(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case "/":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performDivision(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case ">":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performMore(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case ">=":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performMoreEqual(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case "=":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performEqual(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case "<":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performLess(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case "<=":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performLessEqual(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case "/=":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performNotEqual(node.childs.get(0), node.childs.get(1), left, right, frame);
+        switch (node.identifier) {
+            case "plus":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performAdd(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "minus":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performSubtract(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "multiply":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performMultiply(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "divide":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performDivision(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "more":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performMore(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "more or equal":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performMoreEqual(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "equal":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performEqual(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "less":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performLess(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "less or equal":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performLessEqual(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "not equal":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performNotEqual(node.descendants.get(0), node.descendants.get(1), left, right, frame);
             case "or":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performOr(node.childs.get(0), node.childs.get(1), left, right, frame);
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performOr(node.descendants.get(0), node.descendants.get(1), left, right, frame);
             case "and":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performAnd(node.childs.get(0), node.childs.get(1), left, right, frame);
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performAnd(node.descendants.get(0), node.descendants.get(1), left, right, frame);
             case "xor":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                return performXor(node.childs.get(0), node.childs.get(1), left, right, frame);
-            case "assign":
-                left = visitNode(node.childs.get(0), frame);
-                right = visitNode(node.childs.get(1), frame);
-                frame.table.addVariableEntry(node.childs.get(0).op, checkType(right));
-                return performAssign(node.childs.get(0), node.childs.get(1), left, right, frame);
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                return performXor(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+            case "assignment":
+                left = visitNode(node.descendants.get(0), frame);
+                right = visitNode(node.descendants.get(1), frame);
+                frame.table.addVariableEntry(node.descendants.get(0).identifier, checkType(right));
+                return performAssign(node.descendants.get(0), node.descendants.get(1), left, right, frame);
             case "body":
-                for (ASTNode child:
-                        node.childs) {
+                for (Node child:
+                        node.descendants) {
                     visitNode(child, frame);
                 }
                 return "";
             case "if":
-                visitNode(node.childs.get(0), frame);
-                if (node.childs.size() == 2) {
+                visitNode(node.descendants.get(0), frame);
+                if (node.descendants.size() == 2) {
                     offset.add(frame.offset);
                     code.add("\t\t" + frame.offset + ": ifgt " + frame.offset + JVMInstruction.instructionOffset("goto") + JVMInstruction.instructionOffset("if"));
                     frame.offset += JVMInstruction.instructionOffset("goto") + JVMInstruction.instructionOffset("if");
                     index.add(code.size());
-                    visitNode(node.childs.get(1), frame);
+                    visitNode(node.descendants.get(1), frame);
                     code.add(index.get(0), "\t\t" + offset.get(0) + ": goto " + frame.offset);
                 } else {
                     offset.add(frame.offset);
                     index.add(code.size());
                     frame.offset += JVMInstruction.instructionOffset("if");
-                    visitNode(node.childs.get(2), frame);
+                    visitNode(node.descendants.get(2), frame);
                     code.add(index.get(0), "\t\t" + offset.get(0) + ": ifgt " + frame.offset);
                     offset.add(frame.offset);
                     index.add(code.size());
                     frame.offset += JVMInstruction.instructionOffset("goto");
-                    visitNode(node.childs.get(1), frame);
+                    visitNode(node.descendants.get(1), frame);
                     code.add(index.get(1), "\t\t" + offset.get(1) + ": goto " + frame.offset);
                 }
                 return "";
             case "while":
                 offset.add(frame.offset);
-                visitNode(node.childs.get(0), frame);
+                visitNode(node.descendants.get(0), frame);
                 index.add(this.code.size());
                 offset.add(frame.offset);
                 frame.offset += JVMInstruction.instructionOffset("if");
-                visitNode(node.childs.get(1), frame);
-                code.add(frame.offset + ": goto " + offset.get(0));
+                visitNode(node.descendants.get(1), frame);
+                code.add("\t\t" + frame.offset + ": goto " + offset.get(0));
                 frame.offset += JVMInstruction.instructionOffset("goto");
-                code.add(index.get(0), offset.get(1) + ": ifeq " + frame.offset);
+                code.add(index.get(0), "\t\t" + offset.get(1) + ": ifeq " + frame.offset);
+                return "";
+            case "for":
+                System.out.println(frame.table.variableEntries.get("a"));
+                Node range = node.descendants.get(1);
+                start = visitNode(range.descendants.get(0), frame);
+                identifier = visitNode(node.descendants.get(0), frame);
+                performAssign(node.descendants.get(0), range.descendants.get(0), identifier, start, frame);
+                offset.add(frame.offset);
+                if (Objects.equals(node.descendants.get(1).identifier, "range")) {
+                    performLessEqual(node.descendants.get(0), range.descendants.get(1), identifier, visitNode(range.descendants.get(1), frame), frame);
+                } else {
+                    performMoreEqual(node.descendants.get(0), range.descendants.get(1), identifier, visitNode(range.descendants.get(1), frame), frame);
+                }
+                int value = frame.offset + JVMInstruction.instructionOffset("if") + JVMInstruction.instructionOffset("goto");
+                code.add("\t\t" + frame.offset + ": ifgt " + value);
+                frame.offset += JVMInstruction.instructionOffset("if");
+                index.add(code.size());
+                offset.add(frame.offset);
+                frame.offset += JVMInstruction.instructionOffset("goto");
+                visitNode(node.descendants.get(2), frame);
+                if (Objects.equals(node.descendants.get(1).identifier, "range")) {
+                    code.addAll(frame.incrementPositive(identifier));
+                } else {
+                    code.addAll(frame.incrementNegative(identifier));
+                }
+                code.add("\t\t" + frame.offset + ": goto " + offset.get(0));
+                code.add(index.get(0), "\t\t" + offset.get(1) + ": goto " + frame.offset);
+                frame.offset += JVMInstruction.instructionOffset("goto");
+                return "";
+            case "modifiable":
+                return visitNode(node.descendants.get(0), frame);
+            case "variable-declaration":
+                if (Objects.equals(node.descendants.get(1).identifier, "type-integer")) {
+                    if (node.descendants.size() == 2) {
+                        frame.table.addVariableEntry(node.descendants.get(0).identifier, checkType(node.descendants.get(1).identifier));
+                        frame.variableDeclaration(node.descendants.get(0).identifier);
+                        return "";
+                    } else {
+                        frame.table.addVariableEntry(node.descendants.get(0).identifier, checkType(node.descendants.get(1).identifier));
+                        left = visitNode(node.descendants.get(0), frame);
+                        right = visitNode(node.descendants.get(2), frame);
+                        return performAssign(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+                    }
+                } else if (Objects.equals(node.descendants.get(1).identifier, "type-real")) {
+                    if (node.descendants.size() == 2) {
+                        frame.table.addVariableEntry(node.descendants.get(0).identifier, checkType(node.descendants.get(1).identifier));
+                        frame.variableDeclaration(node.descendants.get(0).identifier);
+                        return "";
+                    } else {
+                        frame.table.addVariableEntry(node.descendants.get(0).identifier, checkType(node.descendants.get(1).identifier));
+                        left = visitNode(node.descendants.get(0), frame);
+                        right = visitNode(node.descendants.get(2), frame);
+                        return performAssign(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+                    }
+                } else if (Objects.equals(node.descendants.get(1).identifier, "type-boolean")) {
+                    if (node.descendants.size() == 2) {
+                        frame.table.addVariableEntry(node.descendants.get(0).identifier, checkType(node.descendants.get(1).identifier));
+                        frame.variableDeclaration(node.descendants.get(0).identifier);
+                        return "";
+                    } else {
+                        frame.table.addVariableEntry(node.descendants.get(0).identifier, checkType(node.descendants.get(1).identifier));
+                        left = visitNode(node.descendants.get(0), frame);
+                        right = visitNode(node.descendants.get(2), frame);
+                        return performAssign(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+                    }
+                } else {
+                    left = visitNode(node.descendants.get(0), frame);
+                    right = visitNode(node.descendants.get(1), frame);
+                    frame.table.addVariableEntry(node.descendants.get(0).identifier, checkType(right));
+                    return performAssign(node.descendants.get(0), node.descendants.get(1), left, right, frame);
+                }
             default:
-                if (Objects.equals(frame.table.variableEntries.get(node.op), "boolean")) {
+                if (Objects.equals(frame.table.variableEntries.get(node.identifier), "boolean")) {
                     return "boolId";
-                } else if (Objects.equals(frame.table.variableEntries.get(node.op), "int")) {
+                } else if (Objects.equals(frame.table.variableEntries.get(node.identifier), "integer")) {
                     return "intId";
-                } else if (Objects.equals(frame.table.variableEntries.get(node.op), "real")) {
+                } else if (Objects.equals(frame.table.variableEntries.get(node.identifier), "real")) {
                     return "realId";
                 }
-                return node.op;
+                return node.identifier;
         }
     }
 
     String checkType (String ret) {
-        if (Objects.equals(ret, "boolId") || Objects.equals(ret, "boolStack") || Objects.equals(ret, "boolValue")) {
+        if (Objects.equals(ret, "boolId") || Objects.equals(ret, "boolStack") || Objects.equals(ret, "boolValue") || Objects.equals(ret, "type-boolean")) {
             return "boolean";
-        } else if (Objects.equals(ret, "intId") || Objects.equals(ret, "intValue") || Objects.equals(ret, "intStack")) {
-            return "int";
-        } else if (Objects.equals(ret, "realId") || Objects.equals(ret, "realValue") || Objects.equals(ret, "realStack")) {
+        } else if (Objects.equals(ret, "intId") || Objects.equals(ret, "intValue") || Objects.equals(ret, "intStack") || Objects.equals(ret, "type-integer")) {
+            return "integer";
+        } else if (Objects.equals(ret, "realId") || Objects.equals(ret, "realValue") || Objects.equals(ret, "realStack") || Objects.equals(ret, "type-real")) {
             return "real";
         }
         return "Error";
     }
 
-    String performOr (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performOr (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "boolId")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.orId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.orId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "boolValue")) {
-                this.code.addAll(frame.orValueId(leftNode.op, rightNode.boolValue));
+                this.code.addAll(frame.orValueId(leftNode.identifier, rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
-                this.code.addAll(frame.orStackId(leftNode.op));
+                this.code.addAll(frame.orStackId(leftNode.identifier));
             }
             return "boolStack";
         } else if (Objects.equals(left, "boolValue")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.orValueId(rightNode.op, leftNode.boolValue));
+                this.code.addAll(frame.orValueId(rightNode.identifier, leftNode.boolValue));
             } else if (Objects.equals(right, "boolValue")) {
                 this.code.addAll(frame.orValue(leftNode.boolValue, rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
@@ -199,7 +272,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "boolStack")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.orStackId(rightNode.op));
+                this.code.addAll(frame.orStackId(rightNode.identifier));
             } else if (Objects.equals(right, "boolValue")) {
                 this.code.addAll(frame.orValueStack(rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
@@ -210,19 +283,19 @@ public class JVMCompiler {
         return "Error";
     }
 
-    String performAnd (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performAnd (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "boolId")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.andId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.andId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "boolValue")) {
-                this.code.addAll(frame.andValueId(leftNode.op, rightNode.boolValue));
+                this.code.addAll(frame.andValueId(leftNode.identifier, rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
-                this.code.addAll(frame.andStackId(leftNode.op));
+                this.code.addAll(frame.andStackId(leftNode.identifier));
             }
             return "boolStack";
         } else if (Objects.equals(left, "boolValue")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.andValueId(rightNode.op, leftNode.boolValue));
+                this.code.addAll(frame.andValueId(rightNode.identifier, leftNode.boolValue));
             } else if (Objects.equals(right, "boolValue")) {
                 this.code.addAll(frame.andValue(leftNode.boolValue, rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
@@ -231,7 +304,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "boolStack")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.andStackId(rightNode.op));
+                this.code.addAll(frame.andStackId(rightNode.identifier));
             } else if (Objects.equals(right, "boolValue")) {
                 this.code.addAll(frame.andValueStack(rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
@@ -242,19 +315,19 @@ public class JVMCompiler {
         return "Error";
     }
 
-    String performXor (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performXor (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "boolId")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.xorId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.xorId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "boolValue")) {
-                this.code.addAll(frame.xorValueId(leftNode.op, rightNode.boolValue));
+                this.code.addAll(frame.xorValueId(leftNode.identifier, rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
-                this.code.addAll(frame.xorStackId(leftNode.op));
+                this.code.addAll(frame.xorStackId(leftNode.identifier));
             }
             return "boolStack";
         } else if (Objects.equals(left, "boolValue")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.xorValueId(rightNode.op, leftNode.boolValue));
+                this.code.addAll(frame.xorValueId(rightNode.identifier, leftNode.boolValue));
             } else if (Objects.equals(right, "boolValue")) {
                 this.code.addAll(frame.xorValue(leftNode.boolValue, rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
@@ -263,7 +336,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "boolStack")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.xorStackId(rightNode.op));
+                this.code.addAll(frame.xorStackId(rightNode.identifier));
             } else if (Objects.equals(right, "boolValue")) {
                 this.code.addAll(frame.xorValueStack(rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
@@ -274,51 +347,51 @@ public class JVMCompiler {
         return "Error";
     }
 
-    String performAssign (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
-        if (Objects.equals(frame.table.checkVariableType(leftNode.op), "boolean")) {
+    String performAssign (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
+        if (Objects.equals(frame.table.checkVariableType(leftNode.identifier), "boolean")) {
             if (Objects.equals(right, "boolId")) {
-                this.code.addAll(frame.assignBoolId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.assignBoolId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "boolValue")) {
-                this.code.addAll(frame.assignBoolValue(leftNode.op, rightNode.boolValue));
+                this.code.addAll(frame.assignBoolValue(leftNode.identifier, rightNode.boolValue));
             } else if (Objects.equals(right, "boolStack")) {
-                this.code.addAll(frame.assignBoolStack(leftNode.op));
+                this.code.addAll(frame.assignBoolStack(leftNode.identifier));
             }
             return "";
-        } else if (Objects.equals(frame.table.checkVariableType(leftNode.op), "int")) {
+        } else if (Objects.equals(frame.table.checkVariableType(leftNode.identifier), "integer")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.assignIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.assignIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.assignIntValue(rightNode.intValue, leftNode.op));
+                this.code.addAll(frame.assignIntValue(rightNode.intValue, leftNode.identifier));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.assignIntStack(leftNode.op));
+                this.code.addAll(frame.assignIntStack(leftNode.identifier));
             }
             return "";
-        } else if (Objects.equals(frame.table.checkVariableType(leftNode.op), "real")) {
+        } else if (Objects.equals(frame.table.checkVariableType(leftNode.identifier), "real")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.assignRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.assignRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.assignRealValue(rightNode.realValue, leftNode.op));
+                this.code.addAll(frame.assignRealValue(rightNode.realValue, leftNode.identifier));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.assignRealStack(leftNode.op));
+                this.code.addAll(frame.assignRealStack(leftNode.identifier));
             }
             return "";
         }
         return "Error";
     }
 
-    String performMore (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performMore (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.moreIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.moreIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.moreIntIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.moreIntIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.moreIntIdStack(leftNode.op, true));
+                this.code.addAll(frame.moreIntIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.moreIntIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.moreIntIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.moreIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -327,7 +400,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.moreIntIdStack(rightNode.op, false));
+                this.code.addAll(frame.moreIntIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.moreIntValueStack(rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
@@ -336,16 +409,16 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.moreRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.moreRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.moreRealIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.moreRealIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.moreRealIdStack(leftNode.op, true));
+                this.code.addAll(frame.moreRealIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.moreRealIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.moreRealIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.moreRealValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -354,7 +427,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.moreRealIdStack(rightNode.op, false));
+                this.code.addAll(frame.moreRealIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.moreRealStackValue(rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
@@ -365,19 +438,20 @@ public class JVMCompiler {
         return "TypeError";
     }
 
-    String performMoreEqual (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performMoreEqual (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
+        System.out.println(left + " " + right);
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.moreEqualIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.moreEqualIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.moreEqualIntIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.moreEqualIntIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.moreEqualIntIdStack(leftNode.op, true));
+                this.code.addAll(frame.moreEqualIntIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.moreEqualIntIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.moreEqualIntIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.moreEqualIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -386,7 +460,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.moreEqualIntIdStack(rightNode.op, false));
+                this.code.addAll(frame.moreEqualIntIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.moreEqualIntValueStack(rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
@@ -395,16 +469,16 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.moreEqualRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.moreEqualRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.moreEqualRealIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.moreEqualRealIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.moreEqualRealIdStack(leftNode.op, true));
+                this.code.addAll(frame.moreEqualRealIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.moreEqualRealIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.moreEqualRealIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.moreEqualRealValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -413,7 +487,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.moreEqualRealIdStack(rightNode.op, false));
+                this.code.addAll(frame.moreEqualRealIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.moreEqualRealStackValue(rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
@@ -424,19 +498,19 @@ public class JVMCompiler {
         return "TypeError";
     }
 
-    String performEqual (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performEqual (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.equalIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.equalIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.equalIntIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.equalIntIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.equalIntIdStack(leftNode.op, true));
+                this.code.addAll(frame.equalIntIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.equalIntIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.equalIntIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.equalIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -445,7 +519,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.equalIntIdStack(rightNode.op, false));
+                this.code.addAll(frame.equalIntIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.equalIntValueStack(rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
@@ -454,16 +528,16 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.equalRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.equalRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.equalRealIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.equalRealIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.equalRealIdStack(leftNode.op, true));
+                this.code.addAll(frame.equalRealIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.equalRealIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.equalRealIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.equalRealValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -472,7 +546,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.equalRealIdStack(rightNode.op, false));
+                this.code.addAll(frame.equalRealIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.equalRealStackValue(rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
@@ -483,19 +557,19 @@ public class JVMCompiler {
         return "TypeError";
     }
 
-    String performLess (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performLess (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.lessIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.lessIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.lessIntIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.lessIntIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.lessIntIdStack(leftNode.op, true));
+                this.code.addAll(frame.lessIntIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.lessIntIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.lessIntIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.lessIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -504,7 +578,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.lessIntIdStack(rightNode.op, false));
+                this.code.addAll(frame.lessIntIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.lessIntValueStack(rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
@@ -513,16 +587,16 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.lessRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.lessRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.lessRealIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.lessRealIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.lessRealIdStack(leftNode.op, true));
+                this.code.addAll(frame.lessRealIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.lessRealIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.lessRealIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.lessRealValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -531,7 +605,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.lessRealIdStack(rightNode.op, false));
+                this.code.addAll(frame.lessRealIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.lessRealStackValue(rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
@@ -542,19 +616,19 @@ public class JVMCompiler {
         return "TypeError";
     }
 
-    String performLessEqual (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performLessEqual (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.lessEqualIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.lessEqualIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.lessEqualIntIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.lessEqualIntIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.lessEqualIntIdStack(leftNode.op, true));
+                this.code.addAll(frame.lessEqualIntIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.lessEqualIntIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.lessEqualIntIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.lessEqualIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -563,7 +637,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.lessEqualIntIdStack(rightNode.op, false));
+                this.code.addAll(frame.lessEqualIntIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.lessEqualIntValueStack(rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
@@ -572,16 +646,16 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.lessEqualRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.lessEqualRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.lessEqualRealIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.lessEqualRealIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.lessEqualRealIdStack(leftNode.op, true));
+                this.code.addAll(frame.lessEqualRealIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.lessEqualRealIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.lessEqualRealIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.lessEqualRealValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -590,7 +664,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.lessEqualRealIdStack(rightNode.op, false));
+                this.code.addAll(frame.lessEqualRealIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.lessEqualRealStackValue(rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
@@ -601,19 +675,19 @@ public class JVMCompiler {
         return "TypeError";
     }
 
-    String performNotEqual (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performNotEqual (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.notEqualIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.notEqualIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.notEqualIntIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.notEqualIntIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.notEqualIntIdStack(leftNode.op, true));
+                this.code.addAll(frame.notEqualIntIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.notEqualIntIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.notEqualIntIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.notEqualIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -622,7 +696,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.notEqualIntIdStack(rightNode.op, false));
+                this.code.addAll(frame.notEqualIntIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.notEqualIntValueStack(rightNode.intValue, true));
             } else if (Objects.equals(right, "intStack")) {
@@ -631,16 +705,16 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.notEqualRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.notEqualRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.notEqualRealIdValue(leftNode.op, rightNode.intValue, true));
+                this.code.addAll(frame.notEqualRealIdValue(leftNode.identifier, rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.notEqualRealIdStack(leftNode.op, true));
+                this.code.addAll(frame.notEqualRealIdStack(leftNode.identifier, true));
             }
             return "boolStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.notEqualRealIdValue(rightNode.op, leftNode.intValue, false));
+                this.code.addAll(frame.notEqualRealIdValue(rightNode.identifier, leftNode.intValue, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.notEqualRealValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -649,7 +723,7 @@ public class JVMCompiler {
             return "boolStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.notEqualRealIdStack(rightNode.op, false));
+                this.code.addAll(frame.notEqualRealIdStack(rightNode.identifier, false));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.notEqualRealStackValue(rightNode.intValue, true));
             } else if (Objects.equals(right, "realStack")) {
@@ -660,20 +734,20 @@ public class JVMCompiler {
         return "TypeError";
     }
 
-    String performAdd (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performAdd (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.addIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.addIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
 
-                this.code.addAll(frame.addIntIdValue(leftNode.op, rightNode.intValue));
+                this.code.addAll(frame.addIntIdValue(leftNode.identifier, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.addIntStackId(true, leftNode.op));
+                this.code.addAll(frame.addIntStackId(true, leftNode.identifier));
             }
             return "intStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.addIntIdValue(rightNode.op, leftNode.intValue));
+                this.code.addAll(frame.addIntIdValue(rightNode.identifier, leftNode.intValue));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.addIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -682,7 +756,7 @@ public class JVMCompiler {
             return "intStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.addIntStackId(false, rightNode.op));
+                this.code.addAll(frame.addIntStackId(false, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.addIntStackValue(false, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -691,16 +765,16 @@ public class JVMCompiler {
             return "intStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.addRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.addRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.addRealIdValue(leftNode.op, rightNode.realValue));
+                this.code.addAll(frame.addRealIdValue(leftNode.identifier, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.addRealStackId(true, leftNode.op));
+                this.code.addAll(frame.addRealStackId(true, leftNode.identifier));
             }
             return "realStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.addRealValueId(leftNode.realValue, rightNode.op));
+                this.code.addAll(frame.addRealValueId(leftNode.realValue, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.addRealValue(leftNode.realValue, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -709,7 +783,7 @@ public class JVMCompiler {
             return "realStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.addRealStackId(false, rightNode.op));
+                this.code.addAll(frame.addRealStackId(false, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.addRealStackValue(false, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -720,19 +794,19 @@ public class JVMCompiler {
         return "Error";
     }
 
-    String performSubtract (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performSubtract (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.subtractIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.subtractIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.subtractIntIdValue(leftNode.op, rightNode.intValue));
+                this.code.addAll(frame.subtractIntIdValue(leftNode.identifier, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.subtractIntStackId(true, leftNode.op));
+                this.code.addAll(frame.subtractIntStackId(true, leftNode.identifier));
             }
             return "intStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.subtractIntIdValue(rightNode.op, leftNode.intValue));
+                this.code.addAll(frame.subtractIntIdValue(rightNode.identifier, leftNode.intValue));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.subtractIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -741,7 +815,7 @@ public class JVMCompiler {
             return "intStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.subtractIntStackId(false, rightNode.op));
+                this.code.addAll(frame.subtractIntStackId(false, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.subtractIntStackValue(false, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -750,16 +824,16 @@ public class JVMCompiler {
             return "intStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.subtractRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.subtractRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.subtractRealIdValue(leftNode.op, rightNode.realValue));
+                this.code.addAll(frame.subtractRealIdValue(leftNode.identifier, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.subtractRealStackId(true, leftNode.op));
+                this.code.addAll(frame.subtractRealStackId(true, leftNode.identifier));
             }
             return "realStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.subtractRealValueId(leftNode.realValue, rightNode.op));
+                this.code.addAll(frame.subtractRealValueId(leftNode.realValue, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.subtractRealValue(leftNode.realValue, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -768,7 +842,7 @@ public class JVMCompiler {
             return "realStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.subtractRealStackId(false, rightNode.op));
+                this.code.addAll(frame.subtractRealStackId(false, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.subtractRealStackValue(false, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -779,19 +853,19 @@ public class JVMCompiler {
         return "Error";
     }
 
-    String performMultiply (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performMultiply (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.multiplyIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.multiplyIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.multiplyIntIdValue(leftNode.op, rightNode.intValue));
+                this.code.addAll(frame.multiplyIntIdValue(leftNode.identifier, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.multiplyIntStackId(true, leftNode.op));
+                this.code.addAll(frame.multiplyIntStackId(true, leftNode.identifier));
             }
             return "intStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.multiplyIntIdValue(rightNode.op, leftNode.intValue));
+                this.code.addAll(frame.multiplyIntIdValue(rightNode.identifier, leftNode.intValue));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.multiplyIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -800,7 +874,7 @@ public class JVMCompiler {
             return "intStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.multiplyIntStackId(false, rightNode.op));
+                this.code.addAll(frame.multiplyIntStackId(false, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.multiplyIntStackValue(false, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -809,16 +883,16 @@ public class JVMCompiler {
             return "intStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.multiplyRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.multiplyRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.multiplyRealIdValue(leftNode.op, rightNode.realValue));
+                this.code.addAll(frame.multiplyRealIdValue(leftNode.identifier, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.multiplyRealStackId(true, leftNode.op));
+                this.code.addAll(frame.multiplyRealStackId(true, leftNode.identifier));
             }
             return "realStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.multiplyRealValueId(leftNode.realValue, rightNode.op));
+                this.code.addAll(frame.multiplyRealValueId(leftNode.realValue, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.multiplyRealValue(leftNode.realValue, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -827,7 +901,7 @@ public class JVMCompiler {
             return "realStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.multiplyRealStackId(false, rightNode.op));
+                this.code.addAll(frame.multiplyRealStackId(false, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.multiplyRealStackValue(false, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -838,19 +912,19 @@ public class JVMCompiler {
         return "Error";
     }
 
-    String performDivision (ASTNode leftNode, ASTNode rightNode, String left, String right, JVMFrame frame) {
+    String performDivision (Node leftNode, Node rightNode, String left, String right, JVMFrame frame) {
         if (Objects.equals(left, "intId")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.divisionIntId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.divisionIntId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
-                this.code.addAll(frame.divisionIntIdValue(leftNode.op, rightNode.intValue));
+                this.code.addAll(frame.divisionIntIdValue(leftNode.identifier, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
-                this.code.addAll(frame.divisionIntStackId(true, leftNode.op));
+                this.code.addAll(frame.divisionIntStackId(true, leftNode.identifier));
             }
             return "intStack";
         } else if (Objects.equals(left, "intValue")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.divisionIntIdValue(rightNode.op, leftNode.intValue));
+                this.code.addAll(frame.divisionIntIdValue(rightNode.identifier, leftNode.intValue));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.divisionIntValue(leftNode.intValue, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -859,7 +933,7 @@ public class JVMCompiler {
             return "intStack";
         } else if (Objects.equals(left, "intStack")) {
             if (Objects.equals(right, "intId")) {
-                this.code.addAll(frame.divisionIntStackId(false, rightNode.op));
+                this.code.addAll(frame.divisionIntStackId(false, rightNode.identifier));
             } else if (Objects.equals(right, "intValue")) {
                 this.code.addAll(frame.divisionIntStackValue(false, rightNode.intValue));
             } else if (Objects.equals(right, "intStack")) {
@@ -868,16 +942,16 @@ public class JVMCompiler {
             return "intStack";
         } else if (Objects.equals(left, "realId")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.divisionRealId(leftNode.op, rightNode.op));
+                this.code.addAll(frame.divisionRealId(leftNode.identifier, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
-                this.code.addAll(frame.divisionRealIdValue(leftNode.op, rightNode.realValue));
+                this.code.addAll(frame.divisionRealIdValue(leftNode.identifier, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
-                this.code.addAll(frame.divisionRealStackId(true, leftNode.op));
+                this.code.addAll(frame.divisionRealStackId(true, leftNode.identifier));
             }
             return "realStack";
         } else if (Objects.equals(left, "realValue")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.divisionRealValueId(leftNode.realValue, rightNode.op));
+                this.code.addAll(frame.divisionRealValueId(leftNode.realValue, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.divisionRealValue(leftNode.realValue, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {
@@ -886,7 +960,7 @@ public class JVMCompiler {
             return "realStack";
         } else if (Objects.equals(left, "realStack")) {
             if (Objects.equals(right, "realId")) {
-                this.code.addAll(frame.divisionRealStackId(false, rightNode.op));
+                this.code.addAll(frame.divisionRealStackId(false, rightNode.identifier));
             } else if (Objects.equals(right, "realValue")) {
                 this.code.addAll(frame.divisionRealStackValue(false, rightNode.realValue));
             } else if (Objects.equals(right, "realStack")) {

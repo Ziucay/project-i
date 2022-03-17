@@ -21,12 +21,9 @@ public class Main {
         Parser parser = new Parser(false);
         parser.setTokens(tokens);
         parser.run();
-        JVMCompiler compiler = new JVMCompiler(new ArrayList<>(), "program");
-        ASTNode root = ASTNode.chooseEx(filename);
-        if (root == null) {
-            return;
-        }
-        compiler.traverseTree(root);
+        JVMCompiler compiler = new JVMCompiler(new ArrayList<>(), filename);
+        compiler.traverseTree(parser.root);
+        System.out.println();
         FileWriter writer = new FileWriter(filename + ".class");
         for (String line:
                 compiler.code) {

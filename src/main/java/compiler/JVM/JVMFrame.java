@@ -1,10 +1,11 @@
 package compiler.JVM;
 
 import compiler.ASTNode;
+import compiler.Node;
 import compiler.SymbolTable;
 
+import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -13,14 +14,14 @@ public class JVMFrame {
     HashMap<Float, Integer> constantPool;
     int varId = 1;
     char[] tabs;
-    HashMap<String, Object> varIds;
+    HashMap<String, Integer> varIds;
     public SymbolTable table;
     String parameters;
     String parameterString;
     String returnType;
     String identifier;
 
-    public JVMFrame(HashMap<Float, Integer> constantPool, ArrayList<ASTNode> parameters, String identifier) {
+    public JVMFrame(HashMap<Float, Integer> constantPool, List<Node> parameters, String identifier) {
         this.varIds = new HashMap<>();
         this.constantPool = constantPool;
         this.varId += this.constantPool.size();
@@ -29,18 +30,20 @@ public class JVMFrame {
         this.parameters = "";
         this.parameterString = "";
 
-        for (ASTNode parameter:
-             parameters) {
-            this.parameterString = this.parameters + parameter.childs.get(0).op + ", ";
-            this.parameters += parameter.childs.get(0).op.substring(0, 1).toUpperCase(Locale.ROOT);
-            this.varIds.put(parameter.childs.get(1).op, this.varId);
-            this.varId++;
+        if (parameters != null) {
+            for (Node parameter :
+                    parameters) {
+                this.parameterString = this.parameters + parameter.descendants.get(0).identifier + ", ";
+                this.parameters += parameter.descendants.get(0).identifier.substring(0, 1).toUpperCase(Locale.ROOT);
+                this.varIds.put(parameter.descendants.get(1).identifier, this.varId);
+                this.varId++;
+            }
         }
 
         this.returnType = "void";
     }
 
-    public JVMFrame(HashMap<Float, Integer> constantPool, ArrayList<ASTNode> parameters, String returnType, String identifier) {
+    public JVMFrame(HashMap<Float, Integer> constantPool, List<Node> parameters, String returnType, String identifier) {
         this.varIds = new HashMap<>();
         this.constantPool = constantPool;
         this.varId += this.constantPool.size();
@@ -49,12 +52,14 @@ public class JVMFrame {
         this.parameters = "";
         this.parameterString = "";
 
-        for (ASTNode parameter:
-                parameters) {
-            this.parameterString = this.parameters + parameter.childs.get(0).op + ", ";
-            this.parameters += parameter.childs.get(0).op.substring(0, 1).toUpperCase(Locale.ROOT);
-            this.varIds.put(parameter.childs.get(1).op, this.varId);
-            this.varId++;
+        if (parameters != null) {
+            for (Node parameter :
+                    parameters) {
+                this.parameterString = this.parameters + parameter.descendants.get(0).identifier + ", ";
+                this.parameters += parameter.descendants.get(0).identifier.substring(0, 1).toUpperCase(Locale.ROOT);
+                this.varIds.put(parameter.descendants.get(1).identifier, this.varId);
+                this.varId++;
+            }
         }
 
         this.parameterString = this.parameterString.substring(0, this.parameterString.length() - 3);
@@ -79,11 +84,37 @@ public class JVMFrame {
         return result;
     }
 
+    void variableDeclaration(String identifier) {
+        this.varIds.put(identifier, 0);
+    }
+
+    ArrayList<String> incrementPositive(String identifier) {
+        int id = (int) this.varIds.get(identifier);
+        ArrayList<String> result = new ArrayList<>();
+
+        result.add("\t\t" + offset + ": iinc " + id + " " + 1);
+        this.offset += JVMInstruction.instructionOffset("iinc");
+        return result;
+    }
+
+    ArrayList<String> incrementNegative(String identifier) {
+        int id = (int) this.varIds.get(identifier);
+        ArrayList<String> result = new ArrayList<>();
+
+        result.add("\t\t" + offset + ": iinc " + id + " " + -1);
+        this.offset += JVMInstruction.instructionOffset("iinc");
+        return result;
+    }
+;
     ArrayList<String> assignIntValue(int value, String identifier) {
         ArrayList<String> result = new ArrayList<>();
         result.add("\t\t" + offset + ": bipush " + value);
         this.offset += JVMInstruction.instructionOffset("bipush");
         if (this.varIds.containsKey(identifier)) {
+            if (this.varIds.get(identifier) == 0) {
+                this.varIds.put(identifier, this.varId);
+                this.varId++;
+            }
             result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
@@ -102,6 +133,10 @@ public class JVMFrame {
         result.add("\t\t" + offset + ": iload_" + id);
         this.offset += JVMInstruction.instructionOffset("iload");
         if (this.varIds.containsKey(identifier1)) {
+            if (this.varIds.get(identifier1) == 0) {
+                this.varIds.put(identifier1, this.varId);
+                this.varId++;
+            }
             result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier1));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
@@ -116,6 +151,10 @@ public class JVMFrame {
     ArrayList<String> assignIntStack(String identifier) {
         ArrayList<String> result = new ArrayList<>();
         if (this.varIds.containsKey(identifier)) {
+            if (this.varIds.get(identifier) == 0) {
+                this.varIds.put(identifier, this.varId);
+                this.varId++;
+            }
             result.add("\t\t" + offset + ": istore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("istore");
         } else {
@@ -223,7 +262,7 @@ public class JVMFrame {
     }
 
     ArrayList<String> addIntIdValue(String identifier, int value) {
-        int id = (int) this.varIds.get(identifier);
+        int id = this.varIds.get(identifier);
 
         ArrayList<String> result = new ArrayList<>();
         result.add("\t\t" + offset + ": iload_" + id);
@@ -478,6 +517,10 @@ public class JVMFrame {
         result.add("\t\t" + offset + ": ldc " + id);
         this.offset += JVMInstruction.instructionOffset("ldc");
         if (this.varIds.containsKey(identifier)) {
+            if (this.varIds.get(identifier) == 0) {
+                this.varIds.put(identifier, this.varId);
+                this.varId++;
+            }
             result.add("\t\t" + offset + ": fstore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("fstore");
         } else {
@@ -496,6 +539,10 @@ public class JVMFrame {
         result.add("\t\t" + offset + ": fload_" + id);
         this.offset += JVMInstruction.instructionOffset("fload");
         if (this.varIds.containsKey(identifier1)) {
+            if (this.varIds.get(identifier1) == 0) {
+                this.varIds.put(identifier1, this.varId);
+                this.varId++;
+            }
             result.add("\t\t" + offset + ": fstore_" + this.varIds.get(identifier1));
             this.offset += JVMInstruction.instructionOffset("fstore");
         } else {
@@ -510,6 +557,10 @@ public class JVMFrame {
     ArrayList<String> assignRealStack(String identifier) {
         ArrayList<String> result = new ArrayList<>();
         if (this.varIds.containsKey(identifier)) {
+            if (this.varIds.get(identifier) == 0) {
+                this.varIds.put(identifier, this.varId);
+                this.varId++;
+            }
             result.add("\t\t" + offset + ": fstore_" + this.varIds.get(identifier));
             this.offset += JVMInstruction.instructionOffset("fstore");
         } else {
@@ -518,16 +569,6 @@ public class JVMFrame {
             result.add("\t\t" + offset + ": fstore");
             this.offset += JVMInstruction.instructionOffset("fstore");
         }
-        return result;
-    }
-
-    ArrayList<String> assignReal(String identifier) {
-        ArrayList<String> result = new ArrayList<>();
-        result.add("\t\t" + offset + ": fstore");
-        this.varIds.put(identifier, this.varId);
-        this.varId++;
-        this.varId++;
-        this.offset += JVMInstruction.instructionOffset("fstore");
         return result;
     }
 

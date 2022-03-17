@@ -4,9 +4,9 @@ import java.util.Iterator;
 import java.util.List;
 
 public class Node {
-    String identifier;
+    public String identifier;
     Object value;
-    List<Node> descendants;
+    public List<Node> descendants;
 
     public float realValue;
     public int intValue;
