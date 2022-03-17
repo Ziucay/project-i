@@ -6,14 +6,14 @@ import java.util.List;
 public class Node {
     String identifier;
     Object value;
-    List<Object> descendants;
+    List<Node> descendants;
 
     public float realValue;
     public int intValue;
     public boolean boolValue;
 
 
-    public Node(String identifier, Object value, List<Object> descendants) {
+    public Node(String identifier, Object value, List<Node> descendants) {
         this.identifier = identifier;
         this.value = value;
         this.descendants = descendants;
@@ -60,8 +60,8 @@ public class Node {
             return;
         }
 
-        for (Iterator<Object> it = descendants.iterator(); it.hasNext(); ) {
-            Object next = it.next();
+        for (Iterator<Node> it = descendants.iterator(); it.hasNext(); ) {
+            Node next = it.next();
             if (next == null) {
                 continue;
             }

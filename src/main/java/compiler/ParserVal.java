@@ -19,7 +19,7 @@ public class ParserVal {
 
     public String sval;
 
-    public Object obj;
+    public Node obj;
 
     public Boolean bval;
 
@@ -40,7 +40,7 @@ public class ParserVal {
         sval = val;
     }
 
-    public ParserVal(Object val) {
+    public ParserVal(Node val) {
         obj = val;
     }
 

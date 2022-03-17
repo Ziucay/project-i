@@ -472,7 +472,7 @@ public class Parser {
     };
 
     //#line 206 "yacc.y"
-    Stack<List<Object>> blockStack = new Stack<>();
+    Stack<List<Node>> blockStack = new Stack<>();
 
     List<Token> tokens;
     int tokenPointer = 0;
