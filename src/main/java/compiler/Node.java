@@ -8,16 +8,39 @@ public class Node {
     Object value;
     List<Object> descendants;
 
+    public float realValue;
+    public int intValue;
+    public boolean boolValue;
+
+
     public Node(String identifier, Object value, List<Object> descendants) {
         this.identifier = identifier;
         this.value = value;
         this.descendants = descendants;
+
+        parseValue(value);
     }
 
     public Node(String identifier, Object value) {
         this.identifier = identifier;
         this.value = value;
         this.descendants = null;
+
+        parseValue(value);
+    }
+
+    private void parseValue(Object obj)
+    {
+        if (obj == null)
+            return;
+        if (obj.getClass() == Integer.class)
+            intValue = (Integer)obj;
+        if (obj.getClass() == Double.class)
+            realValue = ((Double) obj).floatValue();
+        if (obj.getClass() == Float.class)
+            realValue = (Float)obj;
+        if (obj.getClass() == Boolean.class)
+            boolValue = (Boolean)obj;
     }
 
     public String toString() {
